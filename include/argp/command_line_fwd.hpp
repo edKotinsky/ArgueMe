@@ -36,9 +36,8 @@ namespace argp {
     public:
       argument_template(T default_value = T(0)) : value(default_value) {}
 
-      void set(T value);
       T const& get() const noexcept;
-    private:
+    protected:
       T value;
     };
 
@@ -150,7 +149,8 @@ namespace argp {
     struct has_operator_extraction_impl {
     private:
       template <class T, std::istream& (std::istream::*) (T&) =
-                             (&std::istream::operator>>)> struct wrapper {};
+                             (&std::istream::operator>>)>
+      struct wrapper {};
 
       template <class T>
       static std::true_type check(wrapper<C>*);
@@ -202,28 +202,28 @@ namespace argp {
   public:
     value_argument(std::string_view longname, std::string_view shortname,
                    command_line& cmdline, T default_value = T { 0 }) {
-      value = default_value;
+      this->value = default_value;
       cmdline.attach(longname, shortname, *this);
     }
 
     virtual void parse(utility::command_line_impl&) override final;
 
-    virtual ~value_argument() override final;
+    virtual ~value_argument() override final {}
   private:
-    T value;
     bool activited = false;
   };
 
   template <typename T>
-  class multi_argument : public utility::argument,
-                         public utility::argument_template<T> {
+  class multi_argument : public utility::argument {
   public:
     multi_argument(std::string_view longname, std::string_view shortname,
                    command_line& cmdline, T default_value = T { 0 });
     virtual void parse(utility::command_line_impl&) override final;
     virtual ~multi_argument() override final;
+
+    std::vector<T> const& get() const noexcept { return value; }
   private:
-    T value;
+    std::vector<T> value;
   };
 
   template <typename T>
@@ -233,8 +233,6 @@ namespace argp {
     positional_argument(command_line& cmdline, T default_value = T { 0 });
     virtual void parse(utility::command_line_impl&) override final;
     virtual ~positional_argument() override final;
-  private:
-    T value;
   };
 
   class switch_argument : public utility::argument,

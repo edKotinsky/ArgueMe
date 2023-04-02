@@ -78,6 +78,20 @@ namespace argp {
        *
        * If the string is not found in a dictionary, and a count of positional
        * arguments == `positional_args.size()`, then throws an error.
+       *
+       * May throw exception of type `command_line_error`, that will contain the
+       * following information:
+       *
+       * In case if an exception was throwed by argument's `parse` method:
+       * `what(): "${arg_what}[: ${arg_info}]", info(): "${argument_name}"`
+       * Here `arg_what` and `arg_info` is `what()` and `info()` strings from
+       * the argument's exception. `${arg_info}` is optional and may not be
+       * appeared, if the original exception's `info()` string is empty.
+       *
+       * In case if argument is unrecognized (not found in dictionary and no
+       * positional arguments):
+       * `what(): "Unexpected argument", info(): "${argument_name}"`
+       *
        */
       void parse(svvec_t const& input_vec);
 

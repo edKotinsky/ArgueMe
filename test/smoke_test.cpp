@@ -1,4 +1,4 @@
-#include <argp/parser.hpp>
+#include <argp/command_line.hpp>
 
 int main() {
 

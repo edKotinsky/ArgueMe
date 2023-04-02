@@ -1,5 +1,5 @@
-#ifndef ARGP_PARSER_HPP
-#define ARGP_PARSER_HPP
+#ifndef ARGP_COMMAND_LINE_FWD
+#define ARGP_COMMAND_LINE_FWD
 
 #include <functional>
 #include <string>
@@ -180,7 +180,7 @@ namespace argp {
       cmdline.attach(longname, shortname, *this);
     }
 
-    virtual void parse(__details::command_line_impl&) override final {}
+    virtual void parse(__details::command_line_impl&) override final;
 
     virtual ~value_argument() override final;
   private:

@@ -5,25 +5,25 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-project(argp LANGUAGES CXX)
+project(ArgueMe LANGUAGES CXX)
 
-option(ARGP_TEST "Build and run tests" OFF)
-option(ARGP_DOC "Build documentation" OFF)
+option(ARGUEME_TEST "Build and run tests" OFF)
+option(ARGUEME_DOC "Build documentation" OFF)
 
-set(SOURCES source/command_line.cpp)
+set(SOURCES source/arg.cpp)
 
-add_library(argp STATIC ${SOURCES})
-target_include_directories(argp PUBLIC include)
-target_compile_options(argp PUBLIC
+add_library(ArgueMe STATIC ${SOURCES})
+target_include_directories(ArgueMe PUBLIC include)
+target_compile_options(ArgueMe PUBLIC
     -Wall
     -Wpedantic
     -Wextra
 )
 
-if(ARGP_TEST)
+if(ARGUEME_TEST)
     add_subdirectory(test)
 endif()
 
-if(ARGP_DOC)
+if(ARGUEME_DOC)
     add_subdirectory(doc)
 endif()

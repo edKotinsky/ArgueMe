@@ -1,5 +1,5 @@
-#ifndef ARGP_COMMAND_LINE_FWD
-#define ARGP_COMMAND_LINE_FWD
+#ifndef ARGUEMEFWD_HPP
+#define ARGUEMEFWD_HPP
 
 #include <functional>
 #include <sstream>

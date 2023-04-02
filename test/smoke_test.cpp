@@ -1,5 +1,4 @@
-#include "argp/command_line_fwd.hpp"
-#include <argp/command_line.hpp>
+#include <argueme/arg.hpp>
 #include <cassert>
 
 int main() {

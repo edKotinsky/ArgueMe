@@ -1,4 +1,4 @@
-project(argp_test LANGUAGES CXX)
+project(ArgueMeTest LANGUAGES CXX)
 
 include(CTest)
 include(FetchContent)
@@ -13,7 +13,7 @@ FetchContent_MakeAvailable(Catch2)
 
 # list of all test targets as a dependency for a test launcher target
 set(TEST_LIST)
-set(TEST_DEPENDENCY argp)
+set(TEST_DEPENDENCY ArgueMe)
 
 macro(add_test_exec TEST_NAME)
     add_executable(${TEST_NAME} EXCLUDE_FROM_ALL ${ARGN})

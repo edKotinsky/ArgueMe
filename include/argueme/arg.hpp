@@ -1,7 +1,7 @@
-#ifndef ARGP_COMMAND_LINE_HPP
-#define ARGP_COMMAND_LINE_HPP
+#ifndef ARGUEME_HPP
+#define ARGUEME_HPP
 
-#include "command_line_fwd.hpp"
+#include "argfwd.hpp"
 #include <cstdlib>
 
 namespace argp {

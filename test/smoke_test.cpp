@@ -17,5 +17,11 @@ int main() {
 
   assert(sw.get() == true);
 
+  std::vector<std::string_view> vec1 = { "-h" };
+
+  cmd.parse(vec);
+
+  assert(sw.get() == false);
+
   return 0;
 }

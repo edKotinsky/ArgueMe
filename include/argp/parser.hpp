@@ -41,8 +41,8 @@ namespace argp {
 
       command_line_impl(std::string_view longname_start,
                         std::string_view shortname_start) {
-        lname_start = longname_start;
-        sname_start = shortname_start;
+        lname_prefix = longname_start;
+        sname_prefix = shortname_start;
       }
 
       /*
@@ -64,11 +64,24 @@ namespace argp {
       /*
        * Checks if `s` is an argument.
        *
-       * Removes a prefix, if it is found is `s`, and finds the resulting string
+       * Removes a prefix, if it is found in `s`, and finds the resulting string
        * in an args dictionary. If an argument is found, then `s` is an argument
        * name.
        */
       bool is_argument(std::string_view s);
+
+      /*
+       * Checks, if `s` starts with longname or shortname prefix. If so, returns
+       * `std::string_view` without these first characters. Otherwise, returns
+       * `s` itself.
+       */
+      std::string_view remove_prefix(std::string_view s);
+
+      /*
+       * Checks if `str` starts with `subs`.
+       */
+      static constexpr bool starts_with(std::string_view str,
+                                        std::string_view subs);
 
       /*
        * Increments an input vector iterator and returns optional of the next
@@ -79,9 +92,11 @@ namespace argp {
       std::optional<std::string_view> next_argument();
 
       /*
-       * Returns the current argument.
+       * Returns optional of the current argument's string_view. If an end of
+       * input vector is reached or input vector is null, then returns an empty
+       * optional.
        */
-      std::string_view get_argument();
+      std::optional<std::string_view> get_argument();
 
     private:
       using argument_t = std::reference_wrapper<argument>;
@@ -92,14 +107,31 @@ namespace argp {
 
       argsvec_t p_args;
       typename argsvec_t::const_iterator cur_pos_arg;
-      std::unordered_map<std::string_view, argument_t>
-          args;
+      std::unordered_map<std::string_view, argument_t> args;
 
-      std::string_view lname_start;
-      std::string_view sname_start;
+      std::string_view lname_prefix;
+      std::string_view sname_prefix;
     };
 
   } // namespace __details
+
+  class command_line_error : public std::exception {
+  public:
+    command_line_error(std::string what) : what_str(what), info_str() {}
+
+    command_line_error(std::string what, std::string info)
+        : what_str(what), info_str(info) {}
+
+    command_line_error(std::string_view what, std::string_view info)
+        : what_str(what), info_str(info) {}
+
+    virtual const char* what() const noexcept { return what_str.c_str(); }
+
+    const char* info() const noexcept { return info_str.c_str(); }
+  private:
+    std::string what_str;
+    std::string info_str;
+  };
 
   class command_line {
   public:

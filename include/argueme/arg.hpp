@@ -45,7 +45,7 @@ namespace arg {
   void multi_argument<T>::parse(utility::command_line_impl& cmdline) {
     auto s = cmdline.next_argument();
     if (!s) throw command_line_error("Option requires a value");
-    T value = utility::from_string<T>(s);
+    T value = utility::from_string<T>(*s);
     this->value.push_back(value);
   }
 
@@ -53,7 +53,7 @@ namespace arg {
   void positional_argument<T>::parse(utility::command_line_impl& cmdline) {
     auto s = cmdline.next_argument();
     if (!s) throw command_line_error("Option requires a value");
-    T value = utility::from_string<T>(s);
+    T value = utility::from_string<T>(*s);
     this->value.push_back(value);
   }
 

@@ -232,8 +232,7 @@ namespace arg {
   class multi_argument : public utility::argument {
   public:
     multi_argument(std::string_view longname, std::string_view shortname,
-                   command_line& cmdline, T default_value = T {})
-        : value(default_value) {
+                   command_line& cmdline) {
       cmdline.attach(longname, shortname, *this);
     }
 

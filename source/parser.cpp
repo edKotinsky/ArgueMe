@@ -106,4 +106,8 @@ namespace argp {
     impl.parse(args);
   }
 
+  void switch_argument::parse(utility::command_line_impl&) { value = !value; }
+
+  switch_argument::~switch_argument() {}
+
 } // namespace argp

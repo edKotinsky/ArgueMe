@@ -26,6 +26,7 @@ endmacro()
 
 add_test_exec(SmokeTest smoke_test.cpp)
 add_test_exec(ValueArg value_arg.cpp)
+add_test_exec(MultiArg multi_arg.cpp)
 
 add_custom_target(MakeTest ALL
     ctest --output-on-failure --test-timeout 10

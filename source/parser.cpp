@@ -2,9 +2,9 @@
 
 namespace argp {
 
-  namespace __details {
+  namespace utility {
 
-    void __details::command_line_impl::parse(const svvec_t& input_vec) {
+    void utility::command_line_impl::parse(const svvec_t& input_vec) {
       input = &input_vec;
       current = input->begin();
 
@@ -60,24 +60,24 @@ namespace argp {
 
     void command_line_impl::attach_argument(std::string_view lname,
                                             std::string_view sname,
-                                            __details::argument& arg) {
+                                            utility::argument& arg) {
       args.insert({ lname, arg });
       args.insert({ sname, arg });
     }
 
-    void command_line_impl::attach_argument(__details::argument& arg) {
+    void command_line_impl::attach_argument(utility::argument& arg) {
       p_args.push_back(arg);
     }
 
-  } // namespace __details
+  } // namespace utility
 
   void command_line::attach(std::string_view longname,
                             std::string_view shortname,
-                            __details::argument& arg) {
+                            utility::argument& arg) {
     impl.attach_argument(longname, shortname, arg);
   }
 
-  void command_line::attach(__details::argument& arg) {
+  void command_line::attach(utility::argument& arg) {
     impl.attach_argument(arg);
   }
 

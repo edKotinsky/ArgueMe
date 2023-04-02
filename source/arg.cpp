@@ -1,7 +1,7 @@
 #include "argueme/arg.hpp"
 #include <cstdio>
 
-namespace argp {
+namespace arg {
 
   namespace utility {
 
@@ -111,4 +111,4 @@ namespace argp {
 
   switch_argument::~switch_argument() {}
 
-} // namespace argp
+} // namespace arg

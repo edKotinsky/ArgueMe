@@ -222,7 +222,7 @@ namespace arg {
       cmdline.attach(longname, shortname, *this);
     }
 
-    void parse(utility::command_line_impl& cmdline) {
+    virtual void parse(utility::command_line_impl& cmdline) override final {
       if (activited)
         throw command_line_error("Option can be appeared only once");
       activited = true;
@@ -244,7 +244,7 @@ namespace arg {
       cmdline.attach(longname, shortname, *this);
     }
 
-    void parse(utility::command_line_impl& cmdline) {
+    virtual void parse(utility::command_line_impl& cmdline) override final {
       auto s = cmdline.next_argument();
       if (!s) throw command_line_error("Option requires a value");
       T value = utility::from_string<T>(*s);
@@ -267,7 +267,7 @@ namespace arg {
       cmdline.attach(*this);
     }
 
-    void parse(utility::command_line_impl& cmdline) {
+    virtual void parse(utility::command_line_impl& cmdline) override final {
       auto s = cmdline.next_argument();
       if (!s) throw command_line_error("Option requires a value");
       this->value = utility::from_string<T>(*s);

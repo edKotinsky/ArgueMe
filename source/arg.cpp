@@ -8,6 +8,7 @@ namespace arg {
     void utility::command_line_impl::parse(const svvec_t& input_vec) {
       input = &input_vec;
       current = input->begin();
+      cur_pos_arg = p_args.begin();
 
       while (current != input->end()) {
         auto arg = remove_prefix(*current);

@@ -222,7 +222,14 @@ namespace arg {
       cmdline.attach(longname, shortname, *this);
     }
 
-    virtual void parse(utility::command_line_impl&) override final;
+    void parse(utility::command_line_impl& cmdline) {
+      if (activited)
+        throw command_line_error("Option can be appeared only once");
+      activited = true;
+      auto s = cmdline.next_argument();
+      if (!s) throw command_line_error("Option requires a value");
+      this->value = utility::from_string<T>(*s);
+    }
 
     virtual ~value_argument() override {}
   private:
@@ -237,7 +244,12 @@ namespace arg {
       cmdline.attach(longname, shortname, *this);
     }
 
-    virtual void parse(utility::command_line_impl&) override final;
+    void parse(utility::command_line_impl& cmdline) {
+      auto s = cmdline.next_argument();
+      if (!s) throw command_line_error("Option requires a value");
+      T value = utility::from_string<T>(*s);
+      this->value.push_back(value);
+    }
 
     virtual ~multi_argument() override {};
 
@@ -250,11 +262,18 @@ namespace arg {
   class positional_argument : public utility::argument,
                               public utility::argument_template<T> {
   public:
-    positional_argument(command_line& cmdline, T default_value = T { 0 });
+    positional_argument(command_line& cmdline, T default_value = T {})
+        : utility::argument_template<T>(default_value) {
+      cmdline.attach(*this);
+    }
 
-    virtual void parse(utility::command_line_impl&) override final;
+    void parse(utility::command_line_impl& cmdline) {
+      auto s = cmdline.next_argument();
+      if (!s) throw command_line_error("Option requires a value");
+      this->value = utility::from_string<T>(*s);
+    }
 
-    virtual ~positional_argument() override final;
+    virtual ~positional_argument() override {}
   };
 
   class switch_argument : public utility::argument,
@@ -270,6 +289,10 @@ namespace arg {
     virtual void parse(utility::command_line_impl&) override final;
     virtual ~switch_argument() override;
   };
+
+  /*
+   * Definitions
+   */
 
   namespace utility {
 
@@ -296,33 +319,6 @@ namespace arg {
   T const& utility::argument_template<T>::get() const noexcept {
     return value;
   }
-
-  template <typename T>
-  void value_argument<T>::parse(utility::command_line_impl& cmdline) {
-    if (activited) throw command_line_error("Option can be appeared only once");
-    activited = true;
-    auto s = cmdline.next_argument();
-    if (!s) throw command_line_error("Option requires a value");
-    this->value = utility::from_string<T>(*s);
-  }
-
-  template <typename T>
-  void multi_argument<T>::parse(utility::command_line_impl& cmdline) {
-    auto s = cmdline.next_argument();
-    if (!s) throw command_line_error("Option requires a value");
-    T value = utility::from_string<T>(*s);
-    this->value.push_back(value);
-  }
-
-  template <typename T>
-  void positional_argument<T>::parse(utility::command_line_impl& cmdline) {
-    auto s = cmdline.next_argument();
-    if (!s) throw command_line_error("Option requires a value");
-    T value = utility::from_string<T>(*s);
-    this->value.push_back(value);
-  }
-
-
 
 } // namespace arg
 

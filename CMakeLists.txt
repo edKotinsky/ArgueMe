@@ -10,9 +10,11 @@ project(argp LANGUAGES CXX)
 option(ARGP_TEST "Build and run tests" OFF)
 option(ARGP_DOC "Build documentation" OFF)
 
-add_library(argp INTERFACE)
-target_include_directories(argp INTERFACE include)
-target_compile_options(argp INTERFACE
+set(SOURCES source/parser.cpp)
+
+add_library(argp STATIC ${SOURCES})
+target_include_directories(argp PUBLIC include)
+target_compile_options(argp PUBLIC
     -Wall
     -Wpedantic
     -Wextra

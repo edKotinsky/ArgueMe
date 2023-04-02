@@ -102,8 +102,15 @@ namespace arg {
 
   void command_line::parse(const char** argv, int argc) {
     std::vector<std::string_view> args;
-    args.reserve(argc);
-    for (int i = 0; i < argc; ++i) args.push_back(argv[i]);
+    args.reserve(argc - 1);
+    for (int i = 1; i < argc; ++i) args.push_back(argv[i]);
+    impl.parse(args);
+  }
+
+  void command_line::parse(const std::vector<std::string>& vec) {
+    std::vector<std::string_view> args;
+    args.reserve(vec.size());
+    for (std::string_view s : vec) args.push_back(s);
     impl.parse(args);
   }
 

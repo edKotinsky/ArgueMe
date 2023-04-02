@@ -207,6 +207,7 @@ namespace arg {
 
     void parse(char const** argv, int argc);
     void parse(std::vector<std::string_view> const& vec);
+    void parse(std::vector<std::string> const& vec);
   private:
     utility::command_line_impl impl;
   };

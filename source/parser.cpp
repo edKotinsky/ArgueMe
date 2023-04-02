@@ -65,7 +65,7 @@ namespace argp {
       args.insert({ sname, arg });
     }
 
-    void command_line_impl::attach_pos_argument(__details::argument& arg) {
+    void command_line_impl::attach_argument(__details::argument& arg) {
       p_args.push_back(arg);
     }
 

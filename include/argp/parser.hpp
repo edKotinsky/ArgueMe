@@ -108,7 +108,7 @@ namespace argp {
        * Attaches positional argument. Positional arguments have no names and
        * they are identified only by its position in the vector `p_args`.
        */
-      void attach_pos_argument(__details::argument& arg);
+      void attach_argument(__details::argument& arg);
 
     private:
       using argument_t = std::reference_wrapper<argument>;

@@ -2,12 +2,32 @@
 #define ARGP_COMMAND_LINE_FWD
 
 #include <functional>
+#include <sstream>
 #include <string>
 #include <string_view>
+#include <type_traits>
 #include <unordered_map>
 #include <vector>
 
 namespace argp {
+
+  class command_line_error : public std::exception {
+  public:
+    command_line_error(std::string what) : what_str(what), info_str() {}
+
+    command_line_error(std::string what, std::string info)
+        : what_str(what), info_str(info) {}
+
+    command_line_error(std::string_view what, std::string_view info)
+        : what_str(what), info_str(info) {}
+
+    virtual const char* what() const noexcept { return what_str.c_str(); }
+
+    const char* info() const noexcept { return info_str.c_str(); }
+  private:
+    std::string what_str;
+    std::string info_str;
+  };
 
   namespace __details {
     template <typename T>
@@ -125,25 +145,44 @@ namespace argp {
       std::string_view sname_prefix;
     };
 
+    template <class C>
+    struct has_operator_extraction_impl {
+    private:
+      template <class T,
+                std::istream& (T::*) (T&) = &T::operator>>> struct wrapper {};
+
+      template <class T>
+      static std::true_type check(wrapper<C>*);
+
+      template <class T>
+      static std::false_type check(...);
+    public:
+      static constexpr bool value =
+          std::is_same_v<decltype(check<C>(0)), std::true_type>;
+    };
+
+    template <class C>
+    struct has_operator_extraction
+        : std::bool_constant<has_operator_extraction_impl<C>::value> {};
+
+    template <typename T>
+    T from_string(std::string_view s) {
+      if constexpr (std::is_same_v<T, std::string> ||
+                    std::is_same_v<T, std::string_view>) {
+        return s;
+      } else {
+        static_assert(has_operator_extraction<T>::value,
+                      "Type must have defined operator<<");
+        std::istringstream is(std::string { s });
+        T res;
+        is >> std::noskipws >> res;
+        if (is.fail() || is.peek() != EOF)
+          throw command_line_error("Cannot convert a string to a value", s);
+        return res;
+      }
+    }
+
   } // namespace __details
-
-  class command_line_error : public std::exception {
-  public:
-    command_line_error(std::string what) : what_str(what), info_str() {}
-
-    command_line_error(std::string what, std::string info)
-        : what_str(what), info_str(info) {}
-
-    command_line_error(std::string_view what, std::string_view info)
-        : what_str(what), info_str(info) {}
-
-    virtual const char* what() const noexcept { return what_str.c_str(); }
-
-    const char* info() const noexcept { return info_str.c_str(); }
-  private:
-    std::string what_str;
-    std::string info_str;
-  };
 
   class command_line {
   public:

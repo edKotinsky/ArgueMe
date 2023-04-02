@@ -58,6 +58,13 @@ namespace argp {
       return s;
     }
 
+    void command_line_impl::attach_argument(std::string_view lname,
+                                            std::string_view sname,
+                                            __details::argument& arg) {
+      args.insert({lname, arg});
+      args.insert({sname, arg});
+    }
+
   } // namespace __details
 
 } // namespace argp

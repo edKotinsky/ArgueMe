@@ -98,6 +98,12 @@ namespace argp {
        */
       std::optional<std::string_view> get_argument();
 
+      /*
+       * Attaches named argument
+       */
+      void attach_argument(std::string_view lname, std::string_view sname,
+                           __details::argument& arg);
+
     private:
       using argument_t = std::reference_wrapper<argument>;
       using argsvec_t = std::vector<argument_t>;

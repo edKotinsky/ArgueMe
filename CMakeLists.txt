@@ -10,7 +10,7 @@ project(argp LANGUAGES CXX)
 option(ARGP_TEST "Build and run tests" OFF)
 option(ARGP_DOC "Build documentation" OFF)
 
-set(SOURCES source/parser.cpp)
+set(SOURCES source/command_line.cpp)
 
 add_library(argp STATIC ${SOURCES})
 target_include_directories(argp PUBLIC include)

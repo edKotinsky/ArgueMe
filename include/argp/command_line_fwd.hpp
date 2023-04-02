@@ -23,7 +23,7 @@ namespace argp {
 
     virtual const char* what() const noexcept { return what_str.c_str(); }
 
-    const char* info() const noexcept { return info_str.c_str(); }
+    std::string const& info() const noexcept { return info_str; }
   private:
     std::string what_str;
     std::string info_str;

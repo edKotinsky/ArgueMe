@@ -2,11 +2,11 @@
 #include <cassert>
 
 int main() {
-  int i = argp::utility::from_string<int>("123");
+  int i = arg::utility::from_string<int>("123");
   assert(i == 123);
 
-  argp::command_line cmd("--", "-");
-  argp::switch_argument sw("hello", "h", cmd);
+  arg::command_line cmd("--", "-");
+  arg::switch_argument sw("hello", "h", cmd);
 
   std::vector<std::string_view> vec = { "--hello" };
 

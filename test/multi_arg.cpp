@@ -19,4 +19,12 @@ TEST_CASE("multi_argument") {
     svec_t expected {"hello", "beautiful", "world"};
     REQUIRE(msg.get() == expected);
   }
+
+  SECTION("Invalid type") {
+    svvec_t vec { "--value", "123", "--value", "1.23" };
+
+    arg::multi_argument<int> v("value", "v", cmd);
+
+    REQUIRE_THROWS(cmd.parse(vec));
+  }
 }

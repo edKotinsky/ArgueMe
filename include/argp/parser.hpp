@@ -104,6 +104,12 @@ namespace argp {
       void attach_argument(std::string_view lname, std::string_view sname,
                            __details::argument& arg);
 
+      /*
+       * Attaches positional argument. Positional arguments have no names and
+       * they are identified only by its position in the vector `p_args`.
+       */
+      void attach_pos_argument(__details::argument& arg);
+
     private:
       using argument_t = std::reference_wrapper<argument>;
       using argsvec_t = std::vector<argument_t>;

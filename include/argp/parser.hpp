@@ -147,11 +147,24 @@ namespace argp {
 
   class command_line {
   public:
-    command_line(std::string_view longname_start,
-                 std::string_view shortname_start);
+    command_line(std::string_view longname_prefix,
+                 std::string_view shortname_prefix)
+        : impl(longname_prefix, shortname_prefix) {}
+
+    /*
+     * Attaches a named argument. Intended for internal usage, shall be called
+     * only by arguments.
+     */
     void attach(std::string_view longname, std::string_view shortname,
                 __details::argument& arg);
-    void parse(char const* argv, int argc);
+
+    /*
+     * Attaches a positional argument. Intended for internal usage, shall be
+     * called only by arguments.
+     */
+    void attach(__details::argument& arg);
+
+    void parse(char const** argv, int argc);
     void parse(std::vector<std::string_view> const& vec);
   private:
     __details::command_line_impl impl;

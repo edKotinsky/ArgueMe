@@ -1,4 +1,5 @@
 #include "argp/command_line_fwd.hpp"
+#include <cstdio>
 
 namespace argp {
 
@@ -66,7 +67,7 @@ namespace argp {
       bool starts_sname = starts_with(s, sname_prefix);
       if (starts_sname && !starts_lname) {
         return s.substr(sname_prefix.size());
-      } else if (starts_lname && !starts_sname) {
+      } else if (starts_lname) {
         return s.substr(lname_prefix.size());
       }
       return s;

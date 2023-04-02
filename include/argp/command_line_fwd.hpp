@@ -29,7 +29,8 @@ namespace argp {
     std::string info_str;
   };
 
-  namespace __details {
+  namespace utility {
+
     template <typename T>
     class argument_template {
     public:
@@ -122,13 +123,13 @@ namespace argp {
        * Attaches named argument
        */
       void attach_argument(std::string_view lname, std::string_view sname,
-                           __details::argument& arg);
+                           utility::argument& arg);
 
       /*
        * Attaches positional argument. Positional arguments have no names and
        * they are identified only by its position in the vector `p_args`.
        */
-      void attach_argument(__details::argument& arg);
+      void attach_argument(utility::argument& arg);
 
     private:
       using argument_t = std::reference_wrapper<argument>;
@@ -166,23 +167,9 @@ namespace argp {
         : std::bool_constant<has_operator_extraction_impl<C>::value> {};
 
     template <typename T>
-    T from_string(std::string_view s) {
-      if constexpr (std::is_same_v<T, std::string> ||
-                    std::is_same_v<T, std::string_view>) {
-        return s;
-      } else {
-        static_assert(has_operator_extraction<T>::value,
-                      "Type must have defined operator<<");
-        std::istringstream is(std::string { s });
-        T res;
-        is >> std::noskipws >> res;
-        if (is.fail() || is.peek() != EOF)
-          throw command_line_error("Cannot convert a string to a value", s);
-        return res;
-      }
-    }
+    T from_string(std::string_view s);
 
-  } // namespace __details
+  } // namespace utility
 
   class command_line {
   public:
@@ -195,23 +182,23 @@ namespace argp {
      * only by arguments.
      */
     void attach(std::string_view longname, std::string_view shortname,
-                __details::argument& arg);
+                utility::argument& arg);
 
     /*
      * Attaches a positional argument. Intended for internal usage, shall be
      * called only by arguments.
      */
-    void attach(__details::argument& arg);
+    void attach(utility::argument& arg);
 
     void parse(char const** argv, int argc);
     void parse(std::vector<std::string_view> const& vec);
   private:
-    __details::command_line_impl impl;
+    utility::command_line_impl impl;
   };
 
   template <typename T>
-  class value_argument : public __details::argument,
-                         public __details::argument_template<T> {
+  class value_argument : public utility::argument,
+                         public utility::argument_template<T> {
   public:
     value_argument(std::string_view longname, std::string_view shortname,
                    command_line& cmdline, T default_value = T { 0 }) {
@@ -219,7 +206,7 @@ namespace argp {
       cmdline.attach(longname, shortname, *this);
     }
 
-    virtual void parse(__details::command_line_impl&) override final;
+    virtual void parse(utility::command_line_impl&) override final;
 
     virtual ~value_argument() override final;
   private:
@@ -228,34 +215,34 @@ namespace argp {
   };
 
   template <typename T>
-  class multi_argument : public __details::argument,
-                         public __details::argument_template<T> {
+  class multi_argument : public utility::argument,
+                         public utility::argument_template<T> {
   public:
     multi_argument(std::string_view longname, std::string_view shortname,
                    command_line& cmdline, T default_value = T { 0 });
-    virtual void parse(__details::command_line_impl&) override final;
+    virtual void parse(utility::command_line_impl&) override final;
     virtual ~multi_argument() override final;
   private:
     T value;
   };
 
   template <typename T>
-  class positional_argument : public __details::argument,
-                              public __details::argument_template<T> {
+  class positional_argument : public utility::argument,
+                              public utility::argument_template<T> {
   public:
     positional_argument(command_line& cmdline, T default_value = T { 0 });
-    virtual void parse(__details::command_line_impl&) override final;
+    virtual void parse(utility::command_line_impl&) override final;
     virtual ~positional_argument() override final;
   private:
     T value;
   };
 
-  class switch_argument : public __details::argument,
-                          public __details::argument_template<bool> {
+  class switch_argument : public utility::argument,
+                          public utility::argument_template<bool> {
   public:
     switch_argument(std::string_view longname, std::string_view shortname,
                     command_line& cmdline, bool default_value = false);
-    virtual void parse(__details::command_line_impl&) override final;
+    virtual void parse(utility::command_line_impl&) override final;
     virtual ~switch_argument() override;
   private:
     bool value;

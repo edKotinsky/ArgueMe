@@ -84,14 +84,15 @@ namespace argp {
       std::string_view get_argument();
 
     private:
-      using argsvec_t = std::vector<argument>;
+      using argument_t = std::reference_wrapper<argument>;
+      using argsvec_t = std::vector<argument_t>;
 
       svvec_t const* input;
       typename svvec_t::const_iterator current;
 
-      argsvec_t positional_args;
-      typename argsvec_t::size_type cur_pos_arg;
-      std::unordered_map<std::string_view, std::reference_wrapper<argument>>
+      argsvec_t p_args;
+      typename argsvec_t::const_iterator cur_pos_arg;
+      std::unordered_map<std::string_view, argument_t>
           args;
 
       std::string_view lname_start;
@@ -104,7 +105,8 @@ namespace argp {
   public:
     command_line(std::string_view longname_start,
                  std::string_view shortname_start);
-    void attach(__details::argument& arg);
+    void attach(std::string_view longname, std::string_view shortname,
+                __details::argument& arg);
     void parse(char const* argv, int argc);
     void parse(std::vector<std::string_view> const& vec);
   private:
@@ -118,6 +120,7 @@ namespace argp {
     value_argument(std::string_view longname, std::string_view shortname,
                    command_line& cmdline, T default_value = T { 0 }) {
       value = default_value;
+      cmdline.attach(longname, shortname, *this);
     }
 
     virtual void parse(__details::command_line_impl&) override final {}

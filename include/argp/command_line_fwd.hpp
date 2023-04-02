@@ -149,8 +149,8 @@ namespace argp {
     template <class C>
     struct has_operator_extraction_impl {
     private:
-      template <class T,
-                std::istream& (T::*) (T&) = &T::operator>>> struct wrapper {};
+      template <class T, std::istream& (std::istream::*) (T&) =
+                             (&std::istream::operator>>)> struct wrapper {};
 
       template <class T>
       static std::true_type check(wrapper<C>*);

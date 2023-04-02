@@ -9,7 +9,7 @@
 #include <unordered_map>
 #include <vector>
 
-namespace argp {
+namespace arg {
 
   class command_line_error : public std::exception {
   public:
@@ -34,7 +34,7 @@ namespace argp {
     template <typename T>
     class argument_template {
     public:
-      argument_template(T default_value = T(0)) : value(default_value) {}
+      argument_template(T default_value) : value(default_value) {}
 
       T const& get() const noexcept;
     protected:
@@ -216,14 +216,14 @@ namespace argp {
                          public utility::argument_template<T> {
   public:
     value_argument(std::string_view longname, std::string_view shortname,
-                   command_line& cmdline, T default_value = T { 0 }) {
-      this->value = default_value;
+                   command_line& cmdline, T default_value = T {})
+        : utility::argument_template<T>(default_value) {
       cmdline.attach(longname, shortname, *this);
     }
 
     virtual void parse(utility::command_line_impl&) override final;
 
-    virtual ~value_argument() override final {}
+    virtual ~value_argument() override {}
   private:
     bool activited = false;
   };
@@ -232,9 +232,14 @@ namespace argp {
   class multi_argument : public utility::argument {
   public:
     multi_argument(std::string_view longname, std::string_view shortname,
-                   command_line& cmdline, T default_value = T { 0 });
+                   command_line& cmdline, T default_value = T {})
+        : value(default_value) {
+      cmdline.attach(longname, shortname, *this);
+    }
+
     virtual void parse(utility::command_line_impl&) override final;
-    virtual ~multi_argument() override final;
+
+    virtual ~multi_argument() override {};
 
     std::vector<T> const& get() const noexcept { return value; }
   private:
@@ -246,7 +251,9 @@ namespace argp {
                               public utility::argument_template<T> {
   public:
     positional_argument(command_line& cmdline, T default_value = T { 0 });
+
     virtual void parse(utility::command_line_impl&) override final;
+
     virtual ~positional_argument() override final;
   };
 
@@ -254,7 +261,8 @@ namespace argp {
                           public utility::argument_template<bool> {
   public:
     switch_argument(std::string_view longname, std::string_view shortname,
-                    command_line& cmdline, bool default_value = false) {
+                    command_line& cmdline, bool default_value = false)
+        : utility::argument_template<bool>(default_value) {
       value = default_value;
       cmdline.attach(longname, shortname, *this);
     }
@@ -263,6 +271,6 @@ namespace argp {
     virtual ~switch_argument() override;
   };
 
-} // namespace argp
+} // namespace arg
 
 #endif

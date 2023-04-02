@@ -4,7 +4,7 @@
 #include "argfwd.hpp"
 #include <cstdlib>
 
-namespace argp {
+namespace arg {
 
   namespace utility {
 
@@ -12,7 +12,7 @@ namespace argp {
     T from_string(std::string_view s) {
       if constexpr (std::is_same_v<T, std::string> ||
                     std::is_same_v<T, std::string_view>) {
-        return s;
+        return std::string { s };
       } else {
         static_assert(has_operator_extraction<T>::value,
                       "Type must have defined operator<<");
@@ -38,8 +38,7 @@ namespace argp {
     activited = true;
     auto s = cmdline.next_argument();
     if (!s) throw command_line_error("Option requires a value");
-    T value = utility::from_string<T>(s);
-    this->value = value;
+    this->value = utility::from_string<T>(*s);
   }
 
   template <typename T>
@@ -58,6 +57,6 @@ namespace argp {
     this->value.push_back(value);
   }
 
-} // namespace argp
+} // namespace arg
 
 #endif

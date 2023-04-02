@@ -52,7 +52,8 @@ namespace argp {
        * iterate over a vector and check, if the string is an argument.
        */
       virtual void parse(command_line_impl& cmdline) = 0;
-      virtual ~argument() = 0;
+
+      virtual ~argument() {}
     };
 
     class command_line_impl {
@@ -253,11 +254,13 @@ namespace argp {
                           public utility::argument_template<bool> {
   public:
     switch_argument(std::string_view longname, std::string_view shortname,
-                    command_line& cmdline, bool default_value = false);
+                    command_line& cmdline, bool default_value = false) {
+      value = default_value;
+      cmdline.attach(longname, shortname, *this);
+    }
+
     virtual void parse(utility::command_line_impl&) override final;
     virtual ~switch_argument() override;
-  private:
-    bool value;
   };
 
 } // namespace argp

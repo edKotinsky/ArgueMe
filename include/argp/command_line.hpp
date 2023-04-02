@@ -2,6 +2,7 @@
 #define ARGP_COMMAND_LINE_HPP
 
 #include "command_line_fwd.hpp"
+#include <cstdlib>
 
 namespace argp {
 
@@ -25,6 +26,37 @@ namespace argp {
     }
 
   } // namespace utility
+
+  template <typename T>
+  T const& utility::argument_template<T>::get() const noexcept {
+    return value;
+  }
+
+  template <typename T>
+  void value_argument<T>::parse(utility::command_line_impl& cmdline) {
+    if (activited) throw command_line_error("Option can be appeared only once");
+    activited = true;
+    auto s = cmdline.next_argument();
+    if (!s) throw command_line_error("Option requires a value");
+    T value = utility::from_string<T>(s);
+    this->value = value;
+  }
+
+  template <typename T>
+  void multi_argument<T>::parse(utility::command_line_impl& cmdline) {
+    auto s = cmdline.next_argument();
+    if (!s) throw command_line_error("Option requires a value");
+    T value = utility::from_string<T>(s);
+    this->value.push_back(value);
+  }
+
+  template <typename T>
+  void positional_argument<T>::parse(utility::command_line_impl& cmdline) {
+    auto s = cmdline.next_argument();
+    if (!s) throw command_line_error("Option requires a value");
+    T value = utility::from_string<T>(s);
+    this->value.push_back(value);
+  }
 
 } // namespace argp
 

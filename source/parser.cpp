@@ -71,4 +71,25 @@ namespace argp {
 
   } // namespace __details
 
+  void command_line::attach(std::string_view longname,
+                            std::string_view shortname,
+                            __details::argument& arg) {
+    impl.attach_argument(longname, shortname, arg);
+  }
+
+  void command_line::attach(__details::argument& arg) {
+    impl.attach_argument(arg);
+  }
+
+  void command_line::parse(std::vector<std::string_view> const& vec) {
+    impl.parse(vec);
+  }
+
+  void command_line::parse(const char** argv, int argc) {
+    std::vector<std::string_view> args;
+    args.reserve(argc);
+    for (int i = 0; i < argc; ++i) args.push_back(argv[i]);
+    impl.parse(args);
+  }
+
 } // namespace argp

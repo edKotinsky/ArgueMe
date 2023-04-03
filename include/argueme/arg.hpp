@@ -1,6 +1,7 @@
 #ifndef ARGUEMEFWD_HPP
 #define ARGUEMEFWD_HPP
 
+#include <exception>
 #include <functional>
 #include <sstream>
 #include <string>
@@ -10,6 +11,25 @@
 #include <vector>
 
 namespace arg {
+
+  class argument_error : public std::exception {
+  public:
+    template <class String>
+    argument_error(String&& what) : what_str(std::move(what)), arg_name() {}
+
+    template <class String1, class String2>
+    argument_error(String1&& what, String2&& argname)
+        : what_str(std::move(what)), arg_name(std::move(argname)) {}
+
+    virtual char const* what() const noexcept override {
+      return what_str.c_str();
+    }
+
+    char const* argname() const noexcept { return arg_name.c_str(); }
+  private:
+    std::string what_str;
+    std::string arg_name;
+  };
 
   class command_line_error : public std::exception {
   public:
@@ -80,19 +100,7 @@ namespace arg {
        * If the string is not found in a dictionary, and a count of positional
        * arguments == `positional_args.size()`, then throws an error.
        *
-       * May throw exception of type `command_line_error`, that will contain the
-       * following information:
-       *
-       * In case if an exception was throwed by argument's `parse` method:
-       * `what(): "${arg_what}[: ${arg_info}]", info(): "${argument_name}"`
-       * Here `arg_what` and `arg_info` is `what()` and `info()` strings from
-       * the argument's exception. `${arg_info}` is optional and may not be
-       * appeared, if the original exception's `info()` string is empty.
-       *
-       * In case if argument is unrecognized (not found in dictionary and no
-       * positional arguments):
-       * `what(): "Unexpected argument", info(): "${argument_name}"`
-       *
+       * May throw exception of type `argument_error`;
        */
       void parse(svvec_t const& input_vec);
 
@@ -224,10 +232,10 @@ namespace arg {
 
     virtual void parse(utility::command_line_impl& cmdline) override final {
       if (activited)
-        throw command_line_error("Option can be appeared only once");
+        throw argument_error("Option can be appeared only once");
       activited = true;
       auto s = cmdline.next_argument();
-      if (!s) throw command_line_error("Option requires a value");
+      if (!s) throw argument_error("Option requires a value");
       this->value = utility::from_string<T>(*s);
     }
 
@@ -246,7 +254,7 @@ namespace arg {
 
     virtual void parse(utility::command_line_impl& cmdline) override final {
       auto s = cmdline.next_argument();
-      if (!s) throw command_line_error("Option requires a value");
+      if (!s) throw argument_error("Option requires a value");
       T value = utility::from_string<T>(*s);
       this->value.push_back(value);
     }
@@ -269,7 +277,7 @@ namespace arg {
 
     virtual void parse(utility::command_line_impl& cmdline) override final {
       auto s = cmdline.get_argument();
-      if (!s) throw command_line_error("Option requires a value");
+      if (!s) throw argument_error("Option requires a value");
       this->value = utility::from_string<T>(*s);
     }
 
@@ -307,8 +315,12 @@ namespace arg {
         std::istringstream is(std::string { s });
         T res;
         is >> std::noskipws >> res;
-        if (is.fail() || is.peek() != EOF)
-          throw command_line_error("Cannot convert a string to a value", s);
+        if (is.fail() || is.peek() != EOF) {
+          std::string msg { "Cannot convert a string `" };
+          msg.append(s);
+          msg.append("` to a value");
+          throw argument_error(msg);
+        }
         return res;
       }
     }

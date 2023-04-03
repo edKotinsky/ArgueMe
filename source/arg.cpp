@@ -13,28 +13,16 @@ namespace arg {
       while (current != input->end()) {
         auto arg = remove_prefix(*current);
         auto it = args.find(arg);
-        bool unexpected_argument = false;
         try {
           if (it != args.end()) {
             it->second.get().parse(*this);
           } else if (cur_pos_arg != p_args.end()) {
             cur_pos_arg->get().parse(*this);
             ++cur_pos_arg;
-          } else unexpected_argument = true;
-        } catch (command_line_error const& e) {
-          auto what = std::string_view(e.what());
-          auto info = std::string_view(e.info());
-          std::string s;
-          s.reserve(what.size() + info.size());
-          s.append(what);
-          if (!info.empty()) {
-            s.append(": ");
-            s.append(info);
-          }
-          throw command_line_error(s, *current);
+          } else throw argument_error("Unrecognized argument");
+        } catch (argument_error const& e) {
+          throw argument_error(e.what(), *current);
         }
-        if (unexpected_argument)
-          throw command_line_error("Unexpected argument", *current);
         ++current;
       }
     }

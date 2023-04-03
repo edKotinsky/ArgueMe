@@ -8,7 +8,7 @@ TEST_CASE("value_argument") {
   SECTION("If argument is not found and there is no positional args") {
     std::vector<std::string_view> vec { "--hello" };
 
-    REQUIRE_THROWS_AS(cmd.parse(vec), arg::command_line_error);
+    REQUIRE_THROWS_AS(cmd.parse(vec), arg::argument_error);
   }
 
   SECTION("Argument with long name") {

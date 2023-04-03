@@ -268,7 +268,7 @@ namespace arg {
     }
 
     virtual void parse(utility::command_line_impl& cmdline) override final {
-      auto s = cmdline.next_argument();
+      auto s = cmdline.get_argument();
       if (!s) throw command_line_error("Option requires a value");
       this->value = utility::from_string<T>(*s);
     }

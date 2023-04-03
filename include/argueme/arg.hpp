@@ -101,6 +101,10 @@ namespace arg {
        * arguments == `positional_args.size()`, then throws an error.
        *
        * May throw exception of type `argument_error`;
+       *
+       * If current positional arg iterator != positional args vector's end and
+       * there is a least one mandatory argument remained, then throws exception
+       * `argument_error`.
        */
       void parse(svvec_t const& input_vec);
 
@@ -151,17 +155,32 @@ namespace arg {
        * Attaches positional argument. Positional arguments have no names and
        * they are identified only by its position in the vector `p_args`.
        */
-      void attach_argument(utility::argument& arg);
+      void attach_argument(utility::argument& arg, bool arg_mandatory);
 
     private:
+      struct posarg_wrapper {
+      public:
+        posarg_wrapper(argument& arg, bool mandatory) noexcept
+            : arg(arg), mandatory(mandatory) {}
+
+        inline argument& get() const noexcept { return arg.get(); }
+
+        inline bool is_mandatory() const noexcept { return mandatory; }
+
+      private:
+        std::reference_wrapper<argument> arg;
+        bool const mandatory;
+      };
+
       using argument_t = std::reference_wrapper<argument>;
       using argsvec_t = std::vector<argument_t>;
 
       svvec_t const* input;
       typename svvec_t::const_iterator current;
 
-      argsvec_t p_args;
-      typename argsvec_t::const_iterator cur_pos_arg;
+      using pargsvec_t = std::vector<posarg_wrapper>;
+      pargsvec_t p_args;
+      typename pargsvec_t::const_iterator cur_pos_arg;
       std::unordered_map<std::string_view, argument_t> args;
 
       std::string_view lname_prefix;
@@ -211,7 +230,7 @@ namespace arg {
      * Attaches a positional argument. Intended for internal usage, shall be
      * called only by arguments.
      */
-    void attach(utility::argument& arg);
+    void attach(utility::argument& arg, bool mandatory);
 
     void parse(char const** argv, int argc);
     void parse(std::vector<std::string_view> const& vec);
@@ -231,8 +250,7 @@ namespace arg {
     }
 
     virtual void parse(utility::command_line_impl& cmdline) override final {
-      if (activited)
-        throw argument_error("Option can be appeared only once");
+      if (activited) throw argument_error("Option can be appeared only once");
       activited = true;
       auto s = cmdline.next_argument();
       if (!s) throw argument_error("Option requires a value");
@@ -270,9 +288,10 @@ namespace arg {
   class positional_argument : public utility::argument,
                               public utility::argument_template<T> {
   public:
-    positional_argument(command_line& cmdline, T default_value = T {})
+    positional_argument(command_line& cmdline, bool is_mandatory = false,
+                        T default_value = T {})
         : utility::argument_template<T>(default_value) {
-      cmdline.attach(*this);
+      cmdline.attach(*this, is_mandatory);
     }
 
     virtual void parse(utility::command_line_impl& cmdline) override final {

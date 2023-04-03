@@ -25,6 +25,11 @@ namespace arg {
         }
         ++current;
       }
+
+      while (cur_pos_arg != p_args.end()) {
+        if (cur_pos_arg->is_mandatory())
+          throw argument_error("Positional argument required");
+      }
     }
 
     bool command_line_impl::is_argument(std::string_view s) {
@@ -69,8 +74,15 @@ namespace arg {
       args.insert({ sname, arg });
     }
 
-    void command_line_impl::attach_argument(utility::argument& arg) {
-      p_args.push_back(arg);
+    void command_line_impl::attach_argument(utility::argument& arg,
+                                            bool arg_mandatory) {
+      if (!p_args.empty()) {
+        bool prev_arg_necessarity = p_args.front().is_mandatory();
+        if (!prev_arg_necessarity && arg_mandatory)
+          throw command_line_error(
+              "Mandatory positional argument can not follow the not mandatory");
+      }
+      p_args.emplace_back(arg, arg_mandatory);
     }
 
   } // namespace utility
@@ -81,8 +93,8 @@ namespace arg {
     impl.attach_argument(longname, shortname, arg);
   }
 
-  void command_line::attach(utility::argument& arg) {
-    impl.attach_argument(arg);
+  void command_line::attach(utility::argument& arg, bool mandatory) {
+    impl.attach_argument(arg, mandatory);
   }
 
   void command_line::parse(std::vector<std::string_view> const& vec) {

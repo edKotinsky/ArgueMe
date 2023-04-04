@@ -10,11 +10,9 @@ project(ArgueMe LANGUAGES CXX)
 option(ARGUEME_TEST "Build and run tests" OFF)
 option(ARGUEME_DOC "Build documentation" OFF)
 
-set(SOURCES source/arg.cpp)
-
-add_library(ArgueMe STATIC ${SOURCES})
-target_include_directories(ArgueMe PUBLIC include)
-target_compile_options(ArgueMe PUBLIC
+add_library(ArgueMe INTERFACE )
+target_include_directories(ArgueMe INTERFACE include)
+target_compile_options(ArgueMe INTERFACE
     -Wall
     -Wpedantic
     -Wextra

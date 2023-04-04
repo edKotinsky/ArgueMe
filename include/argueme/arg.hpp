@@ -56,7 +56,8 @@ namespace arg {
     public:
       argument_template(T default_value) : value(default_value) {}
 
-      T const& get() const noexcept;
+      T const& get() const noexcept { return value; }
+
     protected:
       T value;
     };
@@ -106,7 +107,32 @@ namespace arg {
        * there is a least one mandatory argument remained, then throws exception
        * `argument_error`.
        */
-      void parse(svvec_t const& input_vec);
+      inline void parse(const svvec_t& input_vec) {
+        input = &input_vec;
+        current = input->begin();
+        cur_pos_arg = p_args.begin();
+
+        while (current != input->end()) {
+          auto arg = remove_prefix(*current);
+          auto it = args.find(arg);
+          try {
+            if (it != args.end()) {
+              it->second.get().parse(*this);
+            } else if (cur_pos_arg != p_args.end()) {
+              cur_pos_arg->get().parse(*this);
+              ++cur_pos_arg;
+            } else throw argument_error("Unrecognized argument");
+          } catch (argument_error const& e) {
+            throw argument_error(e.what(), *current);
+          }
+          ++current;
+        }
+
+        while (cur_pos_arg != p_args.end()) {
+          if (cur_pos_arg->is_mandatory())
+            throw argument_error("Positional argument required");
+        }
+      }
 
       /*
        * Checks if `s` is an argument.
@@ -115,20 +141,34 @@ namespace arg {
        * in an args dictionary. If an argument is found, then `s` is an argument
        * name.
        */
-      bool is_argument(std::string_view s);
+      bool is_argument(std::string_view s) {
+        auto name = remove_prefix(s);
+        if (args.find(name) != args.end()) return true;
+        return false;
+      }
 
       /*
        * Checks, if `s` starts with longname or shortname prefix. If so, returns
        * `std::string_view` without these first characters. Otherwise, returns
        * `s` itself.
        */
-      std::string_view remove_prefix(std::string_view s);
+      std::string_view remove_prefix(std::string_view s) {
+        bool starts_lname = starts_with(s, lname_prefix);
+        bool starts_sname = starts_with(s, sname_prefix);
+        if (starts_sname && !starts_lname) {
+          return s.substr(sname_prefix.size());
+        } else if (starts_lname) {
+          return s.substr(lname_prefix.size());
+        }
+        return s;
+      }
 
       /*
        * Checks if `str` starts with `subs`.
        */
-      static constexpr bool starts_with(std::string_view str,
-                                        std::string_view subs);
+      constexpr bool starts_with(std::string_view str, std::string_view subs) {
+        return str.substr(0, subs.size()) == subs;
+      }
 
       /*
        * Increments an input vector iterator and returns optional of the next
@@ -136,26 +176,47 @@ namespace arg {
        * input vector's pointer a null value. In the case if input vector is
        * null, returns empty optional.
        */
-      std::optional<std::string_view> next_argument();
+      std::optional<std::string_view> next_argument() {
+        if (input && current != input->end()) {
+          ++current;
+          return *current;
+        }
+        return {};
+      }
 
       /*
        * Returns optional of the current argument's string_view. If an end of
        * input vector is reached or input vector is null, then returns an empty
        * optional.
        */
-      std::optional<std::string_view> get_argument();
+      std::optional<std::string_view> get_argument() {
+        if (input && current != input->end()) return *current;
+        return {};
+      }
 
       /*
        * Attaches named argument
        */
       void attach_argument(std::string_view lname, std::string_view sname,
-                           utility::argument& arg);
+                           utility::argument& arg) {
+        args.insert({ lname, arg });
+        args.insert({ sname, arg });
+      }
 
       /*
        * Attaches positional argument. Positional arguments have no names and
        * they are identified only by its position in the vector `p_args`.
        */
-      void attach_argument(utility::argument& arg, bool arg_mandatory);
+      void attach_argument(utility::argument& arg, bool arg_mandatory) {
+        if (!p_args.empty()) {
+          bool prev_arg_necessarity = p_args.front().is_mandatory();
+          if (!prev_arg_necessarity && arg_mandatory)
+            throw command_line_error("Mandatory positional argument can not "
+                                     "follow the not mandatory");
+        }
+        p_args.emplace_back(arg, arg_mandatory);
+      }
+
 
     private:
       struct posarg_wrapper {
@@ -209,7 +270,25 @@ namespace arg {
         : std::bool_constant<has_operator_extraction_impl<C>::value> {};
 
     template <typename T>
-    T from_string(std::string_view s);
+    T from_string(std::string_view s) {
+      if constexpr (std::is_same_v<T, std::string> ||
+                    std::is_same_v<T, std::string_view>) {
+        return std::string { s };
+      } else {
+        static_assert(has_operator_extraction<T>::value,
+                      "Type must have defined operator<<");
+        std::istringstream is(std::string { s });
+        T res;
+        is >> std::noskipws >> res;
+        if (is.fail() || is.peek() != EOF) {
+          std::string msg { "Cannot convert a string `" };
+          msg.append(s);
+          msg.append("` to a value");
+          throw argument_error(msg);
+        }
+        return res;
+      }
+    }
 
   } // namespace utility
 
@@ -224,17 +303,34 @@ namespace arg {
      * only by arguments.
      */
     void attach(std::string_view longname, std::string_view shortname,
-                utility::argument& arg);
+                utility::argument& arg) {
+      impl.attach_argument(longname, shortname, arg);
+    }
 
     /*
      * Attaches a positional argument. Intended for internal usage, shall be
      * called only by arguments.
      */
-    void attach(utility::argument& arg, bool mandatory);
+    void attach(utility::argument& arg, bool mandatory) {
+      impl.attach_argument(arg, mandatory);
+    }
 
-    void parse(char const** argv, int argc);
-    void parse(std::vector<std::string_view> const& vec);
-    void parse(std::vector<std::string> const& vec);
+    void parse(std::vector<std::string_view> const& vec) { impl.parse(vec); }
+
+    void parse(const char** argv, int argc) {
+      std::vector<std::string_view> args;
+      args.reserve(argc - 1);
+      for (int i = 1; i < argc; ++i) args.push_back(argv[i]);
+      impl.parse(args);
+    }
+
+    void parse(const std::vector<std::string>& vec) {
+      std::vector<std::string_view> args;
+      args.reserve(vec.size());
+      for (std::string_view s : vec) args.push_back(s);
+      impl.parse(args);
+    }
+
   private:
     utility::command_line_impl impl;
   };
@@ -313,43 +409,12 @@ namespace arg {
       cmdline.attach(longname, shortname, *this);
     }
 
-    virtual void parse(utility::command_line_impl&) override final;
-    virtual ~switch_argument() override;
-  };
-
-  /*
-   * Definitions
-   */
-
-  namespace utility {
-
-    template <typename T>
-    T from_string(std::string_view s) {
-      if constexpr (std::is_same_v<T, std::string> ||
-                    std::is_same_v<T, std::string_view>) {
-        return std::string { s };
-      } else {
-        static_assert(has_operator_extraction<T>::value,
-                      "Type must have defined operator<<");
-        std::istringstream is(std::string { s });
-        T res;
-        is >> std::noskipws >> res;
-        if (is.fail() || is.peek() != EOF) {
-          std::string msg { "Cannot convert a string `" };
-          msg.append(s);
-          msg.append("` to a value");
-          throw argument_error(msg);
-        }
-        return res;
-      }
+    virtual void parse(utility::command_line_impl&) override final {
+      value = !value;
     }
 
-  } // namespace utility
-
-  template <typename T>
-  T const& utility::argument_template<T>::get() const noexcept {
-    return value;
-  }
+    virtual ~switch_argument() override {}
+  };
 
 } // namespace arg
 

@@ -108,30 +108,41 @@ namespace arg {
        * `argument_error`.
        */
       inline void parse(const svvec_t& input_vec) {
-        input = &input_vec;
-        current = input->begin();
-        cur_pos_arg = p_args.begin();
+        if (parsing_active)
+          throw command_line_error(
+              "command_line_impl::parse called recursively");
+        parsing_active = true;
 
-        while (current != input->end()) {
-          auto arg = remove_prefix(*current);
-          auto it = args.find(arg);
-          try {
-            if (it != args.end()) {
-              it->second.get().parse(*this);
-            } else if (cur_pos_arg != p_args.end()) {
-              cur_pos_arg->get().parse(*this);
-              ++cur_pos_arg;
-            } else throw argument_error("Unrecognized argument");
-          } catch (argument_error const& e) {
-            throw argument_error(e.what(), *current);
+        try {
+          input = &input_vec;
+          current = input->begin();
+          cur_pos_arg = p_args.begin();
+
+          while (current != input->end()) {
+            auto arg = remove_prefix(*current);
+            auto it = args.find(arg);
+            try {
+              if (it != args.end()) {
+                it->second.get().parse(*this);
+              } else if (cur_pos_arg != p_args.end()) {
+                cur_pos_arg->get().parse(*this);
+                ++cur_pos_arg;
+              } else throw argument_error("Unrecognized argument");
+            } catch (argument_error const& e) {
+              throw argument_error(e.what(), *current);
+            }
+            ++current;
           }
-          ++current;
-        }
 
-        while (cur_pos_arg != p_args.end()) {
-          if (cur_pos_arg->is_mandatory())
-            throw argument_error("Positional argument required");
+          while (cur_pos_arg != p_args.end()) {
+            if (cur_pos_arg->is_mandatory())
+              throw argument_error("Positional argument required");
+          }
+        } catch (...) {
+          parsing_active = false;
+          throw;
         }
+        parsing_active = false;
       }
 
       /*
@@ -232,6 +243,8 @@ namespace arg {
         std::reference_wrapper<argument> arg;
         bool const mandatory;
       };
+
+      bool parsing_active = false;
 
       using argument_t = std::reference_wrapper<argument>;
       using argsvec_t = std::vector<argument_t>;

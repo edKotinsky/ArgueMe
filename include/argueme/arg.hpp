@@ -235,9 +235,9 @@ namespace arg {
         posarg_wrapper(argument& arg, bool mandatory) noexcept
             : arg(arg), mandatory(mandatory) {}
 
-        inline argument& get() const noexcept { return arg.get(); }
+        argument& get() const noexcept { return arg.get(); }
 
-        inline bool is_mandatory() const noexcept { return mandatory; }
+        bool is_mandatory() const noexcept { return mandatory; }
 
       private:
         std::reference_wrapper<argument> arg;

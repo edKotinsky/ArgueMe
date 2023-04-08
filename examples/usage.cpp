@@ -3,8 +3,7 @@
 
 void print_help(arg::command_line const& cmd) {
   auto descs = cmd.description();
-  for (std::string const& s : descs)
-    std::cout << s << std::endl;
+  for (std::string const& s : descs) std::cout << s << std::endl;
 }
 
 int main(int argc, char** argv) {
@@ -20,14 +19,13 @@ int main(int argc, char** argv) {
   help.add_description("Prints help message");
 
   try {
-  cmd.parse(argv, argc);
+    cmd.parse(argv, argc);
   } catch (arg::argument_error const& e) {
     std::cout << e.what() << ": " << e.argname() << std::endl;
     print_help(cmd);
   }
 
-  if (help.get() || argc == 1)
-    print_help(cmd);
+  if (help.get() || argc == 1) print_help(cmd);
 
   return 0;
 }

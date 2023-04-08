@@ -7,7 +7,7 @@
 #include <string>
 #include <string_view>
 #include <type_traits>
-#include <unordered_map>
+#include <map>
 #include <vector>
 
 namespace arg {
@@ -332,7 +332,7 @@ namespace arg {
       typename pargsvec_t::const_iterator cur_pos_arg;
 
       std::vector<argument_t> args_list;
-      std::unordered_map<std::string_view, argument_t> args;
+      std::map<std::string_view, argument_t> args;
 
       std::string_view lname_prefix;
       std::string_view sname_prefix;

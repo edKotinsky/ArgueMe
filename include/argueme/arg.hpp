@@ -77,6 +77,23 @@ namespace arg {
       virtual ~argument() {}
     };
 
+    class named_argument : public argument {
+    public:
+      named_argument(std::string_view longname, std::string_view shortname,
+                     std::string_view description = "")
+          : lname(longname), sname(shortname), desc(description) {}
+
+      std::string_view longname() const noexcept { return lname; }
+
+      std::string_view shortname() const noexcept { return sname; }
+
+      std::string_view description() const noexcept { return desc; }
+    protected:
+      std::string_view lname;
+      std::string_view sname;
+      std::string_view desc;
+    };
+
     class command_line_impl {
     public:
       using svvec_t = std::vector<std::string_view>;
@@ -123,7 +140,7 @@ namespace arg {
             auto it = args.find(arg);
             try {
               if (it != args.end()) {
-                it->second.get().parse(*this);
+                arg_at(it).parse(*this);
               } else if (cur_pos_arg != p_args.end()) {
                 cur_pos_arg->get().parse(*this);
                 ++cur_pos_arg;
@@ -208,10 +225,9 @@ namespace arg {
       /*
        * Attaches named argument
        */
-      void attach_argument(std::string_view lname, std::string_view sname,
-                           utility::argument& arg) {
-        args.insert({ lname, arg });
-        args.insert({ sname, arg });
+      void attach_argument(utility::named_argument& arg) {
+        args.insert({ arg.longname(), arg });
+        args.insert({ arg.shortname(), arg });
       }
 
       /*
@@ -228,6 +244,55 @@ namespace arg {
         p_args.emplace_back(arg, arg_mandatory);
       }
 
+      template <class Iterator>
+      named_argument& arg_at(Iterator it) const noexcept {
+        return it->second.get();
+      }
+
+      std::vector<std::string> description() {
+        std::vector<std::string> vec;
+        vec.reserve(args.size());
+
+        std::string_view delim = ", ";
+        std::size_t lefthand_side_length = 1;
+
+        auto calculate_size = [&](named_argument const& arg) {
+          return arg.shortname().size() + sname_prefix.size() +
+                 arg.longname().size() + lname_prefix.size() + delim.size();
+        };
+
+        /*
+         * Find lefthand side length that consists of:
+         * argument's shortname length (1) + delimiter length (2) + argument's
+         * longname length (3) + space delimiter between names and description
+         * (4)
+         *
+         * -h, --help    Prints the help message
+         * | | |     |   |                      |
+         * |1|2|  3  | 4 |          5           |
+         */
+        for (auto it = args.cbegin(); it != args.cend(); ++it) {
+          named_argument const& arg = arg_at(it);
+          auto size = calculate_size(arg);
+          if (size > lefthand_side_length) lefthand_side_length = size + 1;
+        }
+
+        for (auto it = args.cbegin(); it != args.cend(); ++it) {
+          named_argument const& arg = arg_at(it);
+          std::size_t argnames_length = calculate_size(arg);
+          std::size_t description_delimiter =
+              lefthand_side_length - argnames_length;
+          vec.emplace_back(lefthand_side_length + arg.description().size(),
+                           ' ');
+          std::string& s = vec.front();
+          if (!arg.shortname().empty()) s.append(arg.shortname()).append(delim);
+          s.append(arg.longname())
+              .append(description_delimiter, ' ')
+              .append(arg.description());
+        }
+
+        return vec;
+      }
 
     private:
       struct posarg_wrapper {
@@ -246,7 +311,7 @@ namespace arg {
 
       bool parsing_active = false;
 
-      using argument_t = std::reference_wrapper<argument>;
+      using argument_t = std::reference_wrapper<named_argument>;
       using argsvec_t = std::vector<argument_t>;
 
       svvec_t const* input;
@@ -309,16 +374,14 @@ namespace arg {
   public:
     command_line(std::string_view longname_prefix,
                  std::string_view shortname_prefix)
-        : impl(longname_prefix, shortname_prefix) {}
+        : impl(longname_prefix, shortname_prefix), longname_p(longname_prefix),
+          shortname_p(shortname_prefix) {}
 
     /*
      * Attaches a named argument. Intended for internal usage, shall be called
      * only by arguments.
      */
-    void attach(std::string_view longname, std::string_view shortname,
-                utility::argument& arg) {
-      impl.attach_argument(longname, shortname, arg);
-    }
+    void attach(utility::named_argument& arg) { impl.attach_argument(arg); }
 
     /*
      * Attaches a positional argument. Intended for internal usage, shall be
@@ -344,18 +407,25 @@ namespace arg {
       impl.parse(args);
     }
 
+    std::string_view prefix_long() const noexcept { return longname_p; }
+
+    std::string_view prefix_short() const noexcept { return shortname_p; }
+
   private:
     utility::command_line_impl impl;
+    std::string_view longname_p;
+    std::string_view shortname_p;
   };
 
   template <typename T>
-  class value_argument : public utility::argument,
+  class value_argument : public utility::named_argument,
                          public utility::argument_template<T> {
   public:
     value_argument(std::string_view longname, std::string_view shortname,
                    command_line& cmdline, T default_value = T {})
-        : utility::argument_template<T>(default_value) {
-      cmdline.attach(longname, shortname, *this);
+        : utility::named_argument(longname, shortname),
+          utility::argument_template<T>(default_value) {
+      cmdline.attach(*this);
     }
 
     virtual void parse(utility::command_line_impl& cmdline) override final {
@@ -372,11 +442,12 @@ namespace arg {
   };
 
   template <typename T>
-  class multi_argument : public utility::argument {
+  class multi_argument : public utility::named_argument {
   public:
     multi_argument(std::string_view longname, std::string_view shortname,
-                   command_line& cmdline) {
-      cmdline.attach(longname, shortname, *this);
+                   command_line& cmdline)
+        : utility::named_argument(longname, shortname) {
+      cmdline.attach(*this);
     }
 
     virtual void parse(utility::command_line_impl& cmdline) override final {
@@ -412,14 +483,15 @@ namespace arg {
     virtual ~positional_argument() override {}
   };
 
-  class switch_argument : public utility::argument,
+  class switch_argument : public utility::named_argument,
                           public utility::argument_template<bool> {
   public:
     switch_argument(std::string_view longname, std::string_view shortname,
                     command_line& cmdline, bool default_value = false)
-        : utility::argument_template<bool>(default_value) {
+        : utility::named_argument(longname, shortname),
+          utility::argument_template<bool>(default_value) {
       value = default_value;
-      cmdline.attach(longname, shortname, *this);
+      cmdline.attach(*this);
     }
 
     virtual void parse(utility::command_line_impl&) override final {

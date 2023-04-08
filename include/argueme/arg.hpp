@@ -121,8 +121,8 @@ namespace arg {
        * May throw exception of type `argument_error`;
        *
        * If current positional arg iterator != positional args vector's end and
-       * there is a least one mandatory argument remained, then throws exception
-       * `argument_error`.
+       * there is a least one mandatory argument remained, then throws
+       * exception `argument_error`.
        */
       inline void parse(const svvec_t& input_vec) {
         if (parsing_active)
@@ -165,9 +165,9 @@ namespace arg {
       /*
        * Checks if `s` is an argument.
        *
-       * Removes a prefix, if it is found in `s`, and finds the resulting string
-       * in an args dictionary. If an argument is found, then `s` is an argument
-       * name.
+       * Removes a prefix, if it is found in `s`, and finds the resulting
+       * string in an args dictionary. If an argument is found, then `s` is an
+       * argument name.
        */
       bool is_argument(std::string_view s) {
         auto name = remove_prefix(s);
@@ -176,9 +176,9 @@ namespace arg {
       }
 
       /*
-       * Checks, if `s` starts with longname or shortname prefix. If so, returns
-       * `std::string_view` without these first characters. Otherwise, returns
-       * `s` itself.
+       * Checks, if `s` starts with longname or shortname prefix. If so,
+       * returns `std::string_view` without these first characters. Otherwise,
+       * returns `s` itself.
        */
       std::string_view remove_prefix(std::string_view s) {
         bool starts_lname = starts_with(s, lname_prefix);
@@ -285,7 +285,8 @@ namespace arg {
           vec.emplace_back(lefthand_side_length + arg.description().size(),
                            ' ');
           std::string& s = vec.front();
-          if (!arg.shortname().empty()) s.append(arg.shortname()).append(delim);
+          if (!arg.shortname().empty())
+            s.append(arg.shortname()).append(delim);
           s.append(arg.longname())
               .append(description_delimiter, ' ')
               .append(arg.description());

@@ -37,7 +37,7 @@ BreakBeforeTernaryOperators: true
 BreakConstructorInitializers: BeforeColon
 BreakInheritanceList: AfterComma
 
-ColumnLimit: 80
+ColumnLimit: 79
 
 Cpp11BracedListStyle: false
 

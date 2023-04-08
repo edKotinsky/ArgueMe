@@ -9,6 +9,7 @@ project(ArgueMe LANGUAGES CXX)
 
 option(ARGUEME_TEST "Build and run tests" OFF)
 option(ARGUEME_DOC "Build documentation" OFF)
+option(ARGUEME_EXAMPLES "Build examples" OFF)
 
 add_library(ArgueMe INTERFACE )
 target_include_directories(ArgueMe INTERFACE include)
@@ -24,4 +25,8 @@ endif()
 
 if(ARGUEME_DOC)
     add_subdirectory(doc)
+endif()
+
+if(ARGUEME_EXAMPLES)
+    add_subdirectory(examples)
 endif()

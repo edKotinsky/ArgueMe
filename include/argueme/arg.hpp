@@ -88,6 +88,10 @@ namespace arg {
       std::string_view shortname() const noexcept { return sname; }
 
       std::string_view description() const noexcept { return desc; }
+
+      void add_description(std::string_view description) {
+        desc = description;
+      }
     protected:
       std::string_view lname;
       std::string_view sname;
@@ -228,6 +232,7 @@ namespace arg {
       void attach_argument(utility::named_argument& arg) {
         args.insert({ arg.longname(), arg });
         args.insert({ arg.shortname(), arg });
+        args_list.push_back(arg);
       }
 
       /*
@@ -249,7 +254,7 @@ namespace arg {
         return it->second.get();
       }
 
-      std::vector<std::string> description() {
+      std::vector<std::string> description() const {
         std::vector<std::string> vec;
         vec.reserve(args.size());
 
@@ -274,17 +279,17 @@ namespace arg {
         for (auto it = args.cbegin(); it != args.cend(); ++it) {
           named_argument const& arg = arg_at(it);
           auto size = calculate_size(arg);
-          if (size > lefthand_side_length) lefthand_side_length = size + 1;
+          if (size > lefthand_side_length) lefthand_side_length = size;
         }
 
-        for (auto it = args.cbegin(); it != args.cend(); ++it) {
-          named_argument const& arg = arg_at(it);
+        for (auto const& it : args_list) {
+          named_argument const& arg = it.get();
           std::size_t argnames_length = calculate_size(arg);
           std::size_t description_delimiter =
-              lefthand_side_length - argnames_length;
+              lefthand_side_length - argnames_length + 1;
           vec.emplace_back(lefthand_side_length + arg.description().size(),
-                           ' ');
-          std::string& s = vec.front();
+                           '\0');
+          std::string& s = vec.back();
           if (!arg.shortname().empty())
             s.append(arg.shortname()).append(delim);
           s.append(arg.longname())
@@ -321,6 +326,8 @@ namespace arg {
       using pargsvec_t = std::vector<posarg_wrapper>;
       pargsvec_t p_args;
       typename pargsvec_t::const_iterator cur_pos_arg;
+
+      std::vector<argument_t> args_list;
       std::unordered_map<std::string_view, argument_t> args;
 
       std::string_view lname_prefix;
@@ -394,7 +401,7 @@ namespace arg {
 
     void parse(std::vector<std::string_view> const& vec) { impl.parse(vec); }
 
-    void parse(const char** argv, int argc) {
+    void parse(char** argv, int argc) {
       std::vector<std::string_view> args;
       args.reserve(argc - 1);
       for (int i = 1; i < argc; ++i) args.push_back(argv[i]);
@@ -411,6 +418,10 @@ namespace arg {
     std::string_view prefix_long() const noexcept { return longname_p; }
 
     std::string_view prefix_short() const noexcept { return shortname_p; }
+
+    std::vector<std::string> description() const {
+      return impl.description();
+    }
 
   private:
     utility::command_line_impl impl;

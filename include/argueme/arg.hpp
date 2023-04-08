@@ -74,7 +74,7 @@ namespace arg {
        */
       virtual void parse(command_line_impl& cmdline) = 0;
 
-      virtual ~argument() {}
+      virtual ~argument() = 0;
     };
 
     class named_argument : public argument {

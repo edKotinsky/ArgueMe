@@ -3,11 +3,11 @@
 
 #include <exception>
 #include <functional>
+#include <map>
 #include <sstream>
 #include <string>
 #include <string_view>
 #include <type_traits>
-#include <map>
 #include <vector>
 
 namespace arg {
@@ -513,6 +513,29 @@ namespace arg {
     }
 
     virtual ~switch_argument() override {}
+  };
+
+  template <class Functor, typename... Args>
+  auto callable_wrapper(Functor&& f, Args&&... args) {
+    return [&]() {
+      return std::invoke(f, args...);
+    };
+  }
+
+  template <class Functor>
+  class command : public details::named_argument {
+  public:
+    command(std::string_view longname, std::string_view shortname,
+            command_line& cmdline, Functor functor)
+        : details::named_argument(longname, shortname), f(functor) {
+      cmdline.attach(*this);
+    }
+
+    virtual void parse(details::command_line_impl&) override final { f(); }
+
+    virtual ~command() override {}
+  private:
+    Functor f;
   };
 
 } // namespace arg

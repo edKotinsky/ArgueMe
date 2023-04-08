@@ -212,8 +212,7 @@ namespace arg {
        * null, returns empty optional.
        */
       std::optional<std::string_view> next_argument() {
-        if (input && ++current != input->end())
-          return *current;
+        if (input && ++current != input->end()) return *current;
         input = nullptr;
         return {};
       }
@@ -290,14 +289,18 @@ namespace arg {
           std::size_t argnames_length = calculate_size(arg);
           std::size_t description_delimiter =
               lefthand_side_length - argnames_length + 1;
+
           vec.emplace_back(lefthand_side_length + arg.description().size(),
                            '\0');
           std::string& s = vec.back();
+
           if (!arg.shortname().empty())
-            s.append(arg.shortname()).append(delim);
-          s.append(arg.longname())
-              .append(description_delimiter, ' ')
-              .append(arg.description());
+            s.append(sname_prefix).append(arg.shortname()).append(delim);
+          if (!arg.longname().empty())
+            s.append(lname_prefix)
+                .append(arg.longname())
+                .append(description_delimiter, ' ')
+                .append(arg.description());
         }
 
         return vec;
@@ -422,9 +425,7 @@ namespace arg {
 
     std::string_view prefix_short() const noexcept { return shortname_p; }
 
-    std::vector<std::string> description() const {
-      return impl.description();
-    }
+    std::vector<std::string> description() const { return impl.description(); }
 
   private:
     utility::command_line_impl impl;

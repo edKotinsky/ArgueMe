@@ -142,15 +142,18 @@ namespace arg {
           while (current != input->end()) {
             auto arg = remove_prefix(*current);
             auto it = args.find(arg);
+            std::string_view last_called;
             try {
               if (it != args.end()) {
+                last_called = *current;
                 arg_at(it).parse(*this);
               } else if (cur_pos_arg != p_args.end()) {
+                last_called = *current;
                 cur_pos_arg->get().parse(*this);
                 ++cur_pos_arg;
               } else throw argument_error("Unrecognized argument");
             } catch (argument_error const& e) {
-              throw argument_error(e.what(), *current);
+              throw argument_error(e.what(), last_called);
             }
             ++current;
           }
@@ -209,10 +212,9 @@ namespace arg {
        * null, returns empty optional.
        */
       std::optional<std::string_view> next_argument() {
-        if (input && current != input->end()) {
-          ++current;
+        if (input && ++current != input->end())
           return *current;
-        }
+        input = nullptr;
         return {};
       }
 
@@ -223,6 +225,7 @@ namespace arg {
        */
       std::optional<std::string_view> get_argument() {
         if (input && current != input->end()) return *current;
+        input = nullptr;
         return {};
       }
 

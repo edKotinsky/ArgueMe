@@ -142,18 +142,16 @@ namespace arg {
           while (current != input->end()) {
             auto arg = remove_prefix(*current);
             auto it = args.find(arg);
-            std::string_view last_called;
+            std::string_view last_arg = *current;
             try {
               if (it != args.end()) {
-                last_called = *current;
                 arg_at(it).parse(*this);
               } else if (cur_pos_arg != p_args.end()) {
-                last_called = *current;
                 cur_pos_arg->get().parse(*this);
                 ++cur_pos_arg;
               } else throw argument_error("Unrecognized argument");
             } catch (argument_error const& e) {
-              throw argument_error(e.what(), last_called);
+              throw argument_error(e.what(), last_arg);
             }
             ++current;
           }

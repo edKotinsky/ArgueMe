@@ -2,7 +2,7 @@
 #include <cassert>
 
 int main() {
-  int i = arg::utility::from_string<int>("123");
+  int i = arg::details::from_string<int>("123");
   assert(i == 123);
 
   arg::command_line cmd("--", "-");

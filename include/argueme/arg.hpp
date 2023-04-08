@@ -49,7 +49,7 @@ namespace arg {
     std::string info_str;
   };
 
-  namespace utility {
+  namespace details {
 
     template <typename T>
     class argument_template {
@@ -229,7 +229,7 @@ namespace arg {
       /*
        * Attaches named argument
        */
-      void attach_argument(utility::named_argument& arg) {
+      void attach_argument(details::named_argument& arg) {
         args.insert({ arg.longname(), arg });
         args.insert({ arg.shortname(), arg });
         args_list.push_back(arg);
@@ -239,7 +239,7 @@ namespace arg {
        * Attaches positional argument. Positional arguments have no names and
        * they are identified only by its position in the vector `p_args`.
        */
-      void attach_argument(utility::argument& arg, bool arg_mandatory) {
+      void attach_argument(details::argument& arg, bool arg_mandatory) {
         if (!p_args.empty()) {
           bool prev_arg_necessarity = p_args.front().is_mandatory();
           if (!prev_arg_necessarity && arg_mandatory)
@@ -380,7 +380,7 @@ namespace arg {
       }
     }
 
-  } // namespace utility
+  } // namespace details
 
   class command_line {
   public:
@@ -393,13 +393,13 @@ namespace arg {
      * Attaches a named argument. Intended for internal usage, shall be called
      * only by arguments.
      */
-    void attach(utility::named_argument& arg) { impl.attach_argument(arg); }
+    void attach(details::named_argument& arg) { impl.attach_argument(arg); }
 
     /*
      * Attaches a positional argument. Intended for internal usage, shall be
      * called only by arguments.
      */
-    void attach(utility::argument& arg, bool mandatory) {
+    void attach(details::argument& arg, bool mandatory) {
       impl.attach_argument(arg, mandatory);
     }
 
@@ -426,28 +426,28 @@ namespace arg {
     std::vector<std::string> description() const { return impl.description(); }
 
   private:
-    utility::command_line_impl impl;
+    details::command_line_impl impl;
     std::string_view longname_p;
     std::string_view shortname_p;
   };
 
   template <typename T>
-  class value_argument : public utility::named_argument,
-                         public utility::argument_template<T> {
+  class value_argument : public details::named_argument,
+                         public details::argument_template<T> {
   public:
     value_argument(std::string_view longname, std::string_view shortname,
                    command_line& cmdline, T default_value = T {})
-        : utility::named_argument(longname, shortname),
-          utility::argument_template<T>(default_value) {
+        : details::named_argument(longname, shortname),
+          details::argument_template<T>(default_value) {
       cmdline.attach(*this);
     }
 
-    virtual void parse(utility::command_line_impl& cmdline) override final {
+    virtual void parse(details::command_line_impl& cmdline) override final {
       if (activited) throw argument_error("Option can be appeared only once");
       activited = true;
       auto s = cmdline.next_argument();
       if (!s) throw argument_error("Option requires a value");
-      this->value = utility::from_string<T>(*s);
+      this->value = details::from_string<T>(*s);
     }
 
     virtual ~value_argument() override {}
@@ -456,18 +456,18 @@ namespace arg {
   };
 
   template <typename T>
-  class multi_argument : public utility::named_argument {
+  class multi_argument : public details::named_argument {
   public:
     multi_argument(std::string_view longname, std::string_view shortname,
                    command_line& cmdline)
-        : utility::named_argument(longname, shortname) {
+        : details::named_argument(longname, shortname) {
       cmdline.attach(*this);
     }
 
-    virtual void parse(utility::command_line_impl& cmdline) override final {
+    virtual void parse(details::command_line_impl& cmdline) override final {
       auto s = cmdline.next_argument();
       if (!s) throw argument_error("Option requires a value");
-      T value = utility::from_string<T>(*s);
+      T value = details::from_string<T>(*s);
       this->value.push_back(value);
     }
 
@@ -479,36 +479,36 @@ namespace arg {
   };
 
   template <typename T>
-  class positional_argument : public utility::argument,
-                              public utility::argument_template<T> {
+  class positional_argument : public details::argument,
+                              public details::argument_template<T> {
   public:
     positional_argument(command_line& cmdline, bool is_mandatory = false,
                         T default_value = T {})
-        : utility::argument_template<T>(default_value) {
+        : details::argument_template<T>(default_value) {
       cmdline.attach(*this, is_mandatory);
     }
 
-    virtual void parse(utility::command_line_impl& cmdline) override final {
+    virtual void parse(details::command_line_impl& cmdline) override final {
       auto s = cmdline.get_argument();
       if (!s) throw argument_error("Option requires a value");
-      this->value = utility::from_string<T>(*s);
+      this->value = details::from_string<T>(*s);
     }
 
     virtual ~positional_argument() override {}
   };
 
-  class switch_argument : public utility::named_argument,
-                          public utility::argument_template<bool> {
+  class switch_argument : public details::named_argument,
+                          public details::argument_template<bool> {
   public:
     switch_argument(std::string_view longname, std::string_view shortname,
                     command_line& cmdline, bool default_value = false)
-        : utility::named_argument(longname, shortname),
-          utility::argument_template<bool>(default_value) {
+        : details::named_argument(longname, shortname),
+          details::argument_template<bool>(default_value) {
       value = default_value;
       cmdline.attach(*this);
     }
 
-    virtual void parse(utility::command_line_impl&) override final {
+    virtual void parse(details::command_line_impl&) override final {
       value = !value;
     }
 

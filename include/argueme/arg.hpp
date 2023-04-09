@@ -275,7 +275,7 @@ namespace arg {
 
       std::vector<std::string> description() const {
         std::vector<std::string> vec;
-        vec.reserve(args.size());
+        vec.reserve(args_list.size());
 
         std::string_view delim = ", ";
         const int lefthand_side_length = 30;

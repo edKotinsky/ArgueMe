@@ -396,6 +396,14 @@ namespace arg {
       };
     }
 
+    inline void execute() noexcept {}
+
+    template <class Command, class... Rest>
+    inline void execute(Command& cmd, Rest&... cmds) {
+      if (cmd.activited()) cmd.execute();
+      execute(cmds...);
+    }
+
   } // namespace util
 
   class command_line {
@@ -549,20 +557,49 @@ namespace arg {
     virtual ~switch_argument() override {}
   };
 
-  template <class Functor>
-  class command : public details::named_argument {
+  class deferred_execution {
+  protected:
+    template <class Functor>
+    void execute_now(Functor) noexcept {}
+
+    template <class Functor>
+    void execute_deffered(Functor functor) {
+      std::invoke(functor);
+    }
+  };
+
+  class instant_execution {
+  protected:
+    template <class Functor>
+    void execute_now(Functor functor) {
+      std::invoke(functor);
+    }
+  };
+
+  template <class Functor, class ExecutionPolicy = instant_execution>
+  class command : public details::named_argument,
+                  ExecutionPolicy {
   public:
     command(std::string_view longname, std::string_view shortname,
-            command_line& cmdline, Functor functor)
+            command_line& cmdline, Functor functor,
+            ExecutionPolicy = instant_execution {})
         : details::named_argument(longname, shortname), f(functor) {
       cmdline.attach(*this);
     }
 
-    virtual void parse(details::command_line_impl&) override final { f(); }
+    virtual void parse(details::command_line_impl&) override final {
+      this->execute_now(f);
+      active = true;
+    }
+
+    void execute() { this->execute_deffered(f); }
+
+    bool activited() const noexcept { return active; }
 
     virtual ~command() override {}
   private:
     Functor f;
+    bool active = false;
   };
 
 } // namespace arg

@@ -369,13 +369,21 @@ namespace arg {
     struct has_operator_extraction
         : std::bool_constant<has_operator_extraction_impl<C>::value> {};
 
+    template <class C>
+    constexpr bool has_operator_extraction_v =
+        has_operator_extraction<C>::value;
+
+  } // namespace details
+
+  namespace util {
+
     template <typename T>
     T from_string(std::string_view s) {
       if constexpr (std::is_same_v<T, std::string> ||
                     std::is_same_v<T, std::string_view>) {
         return std::string { s };
       } else {
-        static_assert(has_operator_extraction<T>::value,
+        static_assert(details::has_operator_extraction_v<T>,
                       "Type must have defined operator<<");
         std::istringstream is(std::string { s });
         T res;
@@ -390,7 +398,14 @@ namespace arg {
       }
     }
 
-  } // namespace details
+    template <class Functor, typename... Args>
+    auto callable_wrapper(Functor f, Args&&... args) {
+      return [f, &args...]() {
+        return std::invoke(f, args...);
+      };
+    }
+
+  } // namespace util
 
   class command_line {
   public:
@@ -474,7 +489,7 @@ namespace arg {
       auto s = cmdline.next_argument();
       if (!s || cmdline.is_argument(*s))
         throw argument_error("Option requires a value");
-      this->value = details::from_string<T>(*s);
+      this->value = util::from_string<T>(*s);
     }
 
     virtual ~value_argument() override {}
@@ -495,7 +510,7 @@ namespace arg {
       auto s = cmdline.next_argument();
       if (!s || cmdline.is_argument(*s))
         throw argument_error("Option requires a value");
-      T value = details::from_string<T>(*s);
+      T value = util::from_string<T>(*s);
       this->value.push_back(value);
     }
 
@@ -519,7 +534,7 @@ namespace arg {
     virtual void parse(details::command_line_impl& cmdline) override final {
       auto s = cmdline.get_argument();
       if (!s) throw argument_error("Option requires a value");
-      this->value = details::from_string<T>(*s);
+      this->value = util::from_string<T>(*s);
     }
 
     virtual ~positional_argument() override {}
@@ -542,13 +557,6 @@ namespace arg {
 
     virtual ~switch_argument() override {}
   };
-
-  template <class Functor, typename... Args>
-  auto callable_wrapper(Functor&& f, Args&&... args) {
-    return [&]() {
-      return std::invoke(f, args...);
-    };
-  }
 
   template <class Functor>
   class command : public details::named_argument {

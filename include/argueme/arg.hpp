@@ -280,14 +280,18 @@ namespace arg {
         std::string_view delim = ", ";
         const int lefthand_side_length = 30;
 
-        auto calculate_size = [&](named_argument const& arg) {
-          return arg.shortname().size() + sname_prefix.size() +
-                 arg.longname().size() + lname_prefix.size() + delim.size();
+        auto calculate_size = [&](named_argument const& arg, bool has_prefix) {
+          auto prefix_total = lname_prefix.size() + sname_prefix.size();
+          auto name_size =
+              arg.shortname().size() + arg.longname().size() + delim.size();
+          return arg.check_prefix(has_prefix) ? name_size + prefix_total
+                                              : name_size;
         };
 
         for (auto const& it : args_list) {
           named_argument const& arg = it.get();
-          int argnames_length = calculate_size(arg);
+          bool has_prefix = arg.check_prefix(true);
+          int argnames_length = calculate_size(arg, has_prefix);
           int description_delimiter = lefthand_side_length - argnames_length;
 
           if (description_delimiter > 0)
@@ -300,10 +304,14 @@ namespace arg {
 
           std::string& s = vec.back();
 
-          if (!arg.shortname().empty())
-            s.append(sname_prefix).append(arg.shortname()).append(delim);
-          if (!arg.longname().empty())
-            s.append(lname_prefix).append(arg.longname());
+          if (!arg.shortname().empty()) {
+            if (has_prefix) s.append(sname_prefix);
+            s.append(arg.shortname()).append(delim);
+          }
+          if (!arg.longname().empty()) {
+            if (has_prefix) s.append(lname_prefix);
+            s.append(arg.longname());
+          }
 
           if (description_delimiter > 0) s.append(description_delimiter, ' ');
           else s.append("\n").append(lefthand_side_length, ' ');

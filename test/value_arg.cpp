@@ -38,10 +38,19 @@ TEST_CASE("value_argument") {
     REQUIRE_THROWS(cmd.parse(vec));
   }
 
-  SECTION("value_argument requires the value after itself") {
+  SECTION("value_argument requires a value after itself") {
     std::vector<std::string_view> vec { "--hello" };
 
     arg::value_argument<std::string> hello_world("hello", "h", cmd);
+
+    REQUIRE_THROWS(cmd.parse(vec));
+  }
+
+  SECTION("value_argument requires a value") {
+    std::vector<std::string_view> vec { "-i", "-f" };
+
+    arg::value_argument<int> i("int", "i", cmd);
+    arg::value_argument<float> f("float", "f", cmd);
 
     REQUIRE_THROWS(cmd.parse(vec));
   }

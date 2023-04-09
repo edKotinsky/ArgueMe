@@ -472,7 +472,8 @@ namespace arg {
       if (activited) throw argument_error("Option can be appeared only once");
       activited = true;
       auto s = cmdline.next_argument();
-      if (!s) throw argument_error("Option requires a value");
+      if (!s || cmdline.is_argument(*s))
+        throw argument_error("Option requires a value");
       this->value = details::from_string<T>(*s);
     }
 
@@ -492,7 +493,8 @@ namespace arg {
 
     virtual void parse(details::command_line_impl& cmdline) override final {
       auto s = cmdline.next_argument();
-      if (!s) throw argument_error("Option requires a value");
+      if (!s || cmdline.is_argument(*s))
+        throw argument_error("Option requires a value");
       T value = details::from_string<T>(*s);
       this->value.push_back(value);
     }

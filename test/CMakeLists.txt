@@ -21,7 +21,10 @@ macro(add_test_exec TEST_NAME)
         ${TEST_DEPENDENCY}
         Catch2::Catch2WithMain)
     list(APPEND TEST_LIST ${TEST_NAME})
-    add_test(NAME ${TEST_NAME} COMMAND ${TEST_NAME})
+    add_test(NAME ${TEST_NAME}
+        COMMAND ${TEST_NAME}
+        --colour-mode ansi
+    )
 endmacro()
 
 add_test_exec(SmokeTest smoke_test.cpp)
@@ -30,7 +33,7 @@ add_test_exec(MultiArg multi_arg.cpp)
 add_test_exec(PosArg pos_arg.cpp)
 
 add_custom_target(MakeTest ALL
-    ctest --output-on-failure --test-timeout 10
+    ctest --output-on-failure --timeout 1 -V
     WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
     USES_TERMINAL
     VERBATIM

@@ -75,7 +75,7 @@ namespace arg {
        */
       virtual void parse(command_line_impl& cmdline) = 0;
 
-      virtual ~argument() = 0;
+      virtual ~argument() {};
     };
 
     class named_argument : public argument {
@@ -129,19 +129,19 @@ namespace arg {
        * there is a least one mandatory argument remained, then throws
        * exception `argument_error`.
        */
-      inline void parse(const svvec_t& input_vec) {
+      inline void parse(svvec_t::const_iterator begin,
+                        svvec_t::const_iterator end) {
         if (parsing_active)
           throw command_line_error(
               "command_line_impl::parse called recursively");
         parsing_active = true;
-        stop_parsing = false;
 
         try {
-          input = &input_vec;
-          current = input->begin();
+          current = begin;
+          this->end = end;
           cur_pos_arg = p_args.begin();
 
-          while (current != input->end()) {
+          while (current != end) {
             auto arg = remove_prefix(*current);
             auto it = args.find(arg);
             std::string_view last_arg = *current;
@@ -155,11 +155,7 @@ namespace arg {
             } catch (argument_error const& e) {
               throw argument_error(e.what(), last_arg);
             }
-            if (stop_parsing) {
-              parsing_active = false;
-              input = nullptr;
-              return;
-            }
+            if (!parsing_active) return;
             ++current;
           }
 
@@ -217,8 +213,8 @@ namespace arg {
        * null, returns empty optional.
        */
       std::optional<std::string_view> next_argument() {
-        if (input && ++current != input->end()) return *current;
-        input = nullptr;
+        if (parsing_active && ++current != end) { return *current; }
+        parsing_active = false;
         return {};
       }
 
@@ -228,8 +224,8 @@ namespace arg {
        * optional.
        */
       std::optional<std::string_view> get_argument() {
-        if (input && current != input->end()) return *current;
-        input = nullptr;
+        if (parsing_active && current != end) { return *current; }
+        parsing_active = false;
         return {};
       }
 
@@ -311,12 +307,11 @@ namespace arg {
         return vec;
       }
 
-      void stop() noexcept { stop_parsing = true; }
+      void stop() noexcept { parsing_active = false; }
 
-      std::pair<std::vector<std::string_view>::const_iterator,
-                std::vector<std::string_view>::const_iterator>
+      std::pair<svvec_t::const_iterator, svvec_t::const_iterator>
           get_arg_iterator() const noexcept {
-        return { current, input->cend() };
+        return { current, end };
       }
 
     private:
@@ -335,13 +330,12 @@ namespace arg {
       };
 
       bool parsing_active = false;
-      bool stop_parsing = false;
 
       using argument_t = std::reference_wrapper<named_argument>;
       using argsvec_t = std::vector<argument_t>;
 
-      svvec_t const* input;
       typename svvec_t::const_iterator current;
+      typename svvec_t::const_iterator end;
 
       using pargsvec_t = std::vector<posarg_wrapper>;
       pargsvec_t p_args;
@@ -400,6 +394,8 @@ namespace arg {
 
   class command_line {
   public:
+    using str_view_vec_t = typename details::command_line_impl::svvec_t;
+
     command_line(std::string_view longname_prefix,
                  std::string_view shortname_prefix)
         : impl(longname_prefix, shortname_prefix), longname_p(longname_prefix),
@@ -419,26 +415,32 @@ namespace arg {
       impl.attach_argument(arg, mandatory);
     }
 
-    void parse(std::vector<std::string_view> const& vec) { impl.parse(vec); }
+    void parse(std::vector<std::string_view> const& vec) {
+      impl.parse(vec.cbegin(), vec.cend());
+    }
 
     void parse(char** argv, int argc) {
       std::vector<std::string_view> args;
       args.reserve(argc - 1);
       for (int i = 1; i < argc; ++i) args.push_back(argv[i]);
-      impl.parse(args);
+      impl.parse(args.cbegin(), args.cend());
     }
 
     void parse(const std::vector<std::string>& vec) {
       std::vector<std::string_view> args;
       args.reserve(vec.size());
       for (std::string_view s : vec) args.push_back(s);
-      impl.parse(args);
+      impl.parse(args.cbegin(), args.cend());
+    }
+
+    void parse(str_view_vec_t::const_iterator begin,
+               str_view_vec_t::const_iterator end) {
+      impl.parse(begin, end);
     }
 
     void stop() noexcept { impl.stop(); }
 
-    std::pair<std::vector<std::string_view>::const_iterator,
-              std::vector<std::string_view>::const_iterator>
+    std::pair<str_view_vec_t::const_iterator, str_view_vec_t::const_iterator>
         get_iterator() const noexcept {
       return impl.get_arg_iterator();
     }

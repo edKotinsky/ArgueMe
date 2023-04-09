@@ -262,46 +262,37 @@ namespace arg {
         vec.reserve(args.size());
 
         std::string_view delim = ", ";
-        std::size_t lefthand_side_length = 1;
+        const int lefthand_side_length = 30;
 
         auto calculate_size = [&](named_argument const& arg) {
           return arg.shortname().size() + sname_prefix.size() +
                  arg.longname().size() + lname_prefix.size() + delim.size();
         };
 
-        /*
-         * Find lefthand side length that consists of:
-         * argument's shortname length (1) + delimiter length (2) + argument's
-         * longname length (3) + space delimiter between names and description
-         * (4)
-         *
-         * -h, --help    Prints the help message
-         * | | |     |   |                      |
-         * |1|2|  3  | 4 |          5           |
-         */
-        for (auto it = args.cbegin(); it != args.cend(); ++it) {
-          named_argument const& arg = arg_at(it);
-          auto size = calculate_size(arg);
-          if (size > lefthand_side_length) lefthand_side_length = size;
-        }
-
         for (auto const& it : args_list) {
           named_argument const& arg = it.get();
-          std::size_t argnames_length = calculate_size(arg);
-          std::size_t description_delimiter =
-              lefthand_side_length - argnames_length + 1;
+          int argnames_length = calculate_size(arg);
+          int description_delimiter = lefthand_side_length - argnames_length;
 
-          vec.emplace_back(lefthand_side_length + arg.description().size(),
-                           '\0');
+          if (description_delimiter > 0)
+            vec.emplace_back(lefthand_side_length + arg.description().size(),
+                             '\0');
+          else
+            vec.emplace_back(lefthand_side_length + argnames_length +
+                                 arg.description().size() + 1,
+                             '\0');
+
           std::string& s = vec.back();
 
           if (!arg.shortname().empty())
             s.append(sname_prefix).append(arg.shortname()).append(delim);
           if (!arg.longname().empty())
-            s.append(lname_prefix)
-                .append(arg.longname())
-                .append(description_delimiter, ' ')
-                .append(arg.description());
+            s.append(lname_prefix).append(arg.longname());
+
+          if (description_delimiter > 0) s.append(description_delimiter, ' ');
+          else s.append("\n").append(lefthand_side_length, ' ');
+
+          s.append(arg.description());
         }
 
         return vec;

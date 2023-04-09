@@ -31,6 +31,7 @@ add_test_exec(SmokeTest smoke_test.cpp)
 add_test_exec(ValueArg value_arg.cpp)
 add_test_exec(MultiArg multi_arg.cpp)
 add_test_exec(PosArg pos_arg.cpp)
+add_test_exec(Command command.cpp)
 
 add_custom_target(MakeTest ALL
     ctest --output-on-failure --timeout 1 -V

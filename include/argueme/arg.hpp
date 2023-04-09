@@ -50,6 +50,8 @@ namespace arg {
     std::string info_str;
   };
 
+  enum class prefix_policy { require, do_not_require, optional };
+
   namespace details {
 
     template <typename T>
@@ -81,14 +83,21 @@ namespace arg {
     class named_argument : public argument {
     public:
       named_argument(std::string_view longname, std::string_view shortname,
-                     std::string_view description = "")
-          : lname(longname), sname(shortname), desc(description) {}
+                     prefix_policy prefix = prefix_policy::optional)
+          : lname(longname), sname(shortname), p_policy(prefix) {}
 
       std::string_view longname() const noexcept { return lname; }
 
       std::string_view shortname() const noexcept { return sname; }
 
       std::string_view description() const noexcept { return desc; }
+
+      bool check_prefix(bool has_prefix) const noexcept {
+        if ((has_prefix && p_policy == prefix_policy::do_not_require) ||
+            (!has_prefix && p_policy == prefix_policy::require))
+          return false;
+        return true;
+      }
 
       void add_description(std::string_view description) {
         desc = description;
@@ -97,6 +106,7 @@ namespace arg {
       std::string_view lname;
       std::string_view sname;
       std::string_view desc;
+      prefix_policy p_policy;
     };
 
     class command_line_impl {
@@ -142,8 +152,14 @@ namespace arg {
           cur_pos_arg = p_args.begin();
 
           while (current != end) {
-            auto arg = remove_prefix(*current);
+            auto arg_data = remove_prefix(*current);
+            auto arg = arg_data.first;
+            bool has_prefix = arg_data.second;
             auto it = args.find(arg);
+
+            if (!arg_at(it).check_prefix(has_prefix))
+              throw argument_error("Prefix error", *current);
+
             std::string_view last_arg = *current;
             try {
               if (it != args.end()) {
@@ -178,7 +194,7 @@ namespace arg {
        * argument name.
        */
       bool is_argument(std::string_view s) {
-        auto name = remove_prefix(s);
+        auto name = remove_prefix(s).first;
         if (args.find(name) != args.end()) return true;
         return false;
       }
@@ -188,15 +204,15 @@ namespace arg {
        * returns `std::string_view` without these first characters. Otherwise,
        * returns `s` itself.
        */
-      std::string_view remove_prefix(std::string_view s) {
+      std::pair<std::string_view, bool> remove_prefix(std::string_view s) {
         bool starts_lname = starts_with(s, lname_prefix);
         bool starts_sname = starts_with(s, sname_prefix);
         if (starts_sname && !starts_lname) {
-          return s.substr(sname_prefix.size());
+          return { s.substr(sname_prefix.size()), true };
         } else if (starts_lname) {
-          return s.substr(lname_prefix.size());
+          return { s.substr(lname_prefix.size()), true };
         }
-        return s;
+        return { s, false };
       }
 
       /*
@@ -476,8 +492,10 @@ namespace arg {
                          public details::argument_template<T> {
   public:
     value_argument(std::string_view longname, std::string_view shortname,
-                   command_line& cmdline, T default_value = T {})
-        : details::named_argument(longname, shortname),
+                   command_line& cmdline,
+                   prefix_policy prefix = prefix_policy::optional,
+                   T default_value = T {})
+        : details::named_argument(longname, shortname, prefix),
           details::argument_template<T>(default_value) {
       cmdline.attach(*this);
     }
@@ -500,8 +518,9 @@ namespace arg {
   class multi_argument : public details::named_argument {
   public:
     multi_argument(std::string_view longname, std::string_view shortname,
-                   command_line& cmdline)
-        : details::named_argument(longname, shortname) {
+                   command_line& cmdline,
+                   prefix_policy prefix = prefix_policy::optional)
+        : details::named_argument(longname, shortname, prefix) {
       cmdline.attach(*this);
     }
 
@@ -543,8 +562,10 @@ namespace arg {
                           public details::argument_template<bool> {
   public:
     switch_argument(std::string_view longname, std::string_view shortname,
-                    command_line& cmdline, bool default_value = false)
-        : details::named_argument(longname, shortname),
+                    command_line& cmdline,
+                    prefix_policy prefix = prefix_policy::optional,
+                    bool default_value = false)
+        : details::named_argument(longname, shortname, prefix),
           details::argument_template<bool>(default_value) {
       value = default_value;
       cmdline.attach(*this);
@@ -582,8 +603,9 @@ namespace arg {
   public:
     command(std::string_view longname, std::string_view shortname,
             command_line& cmdline, Functor functor,
-            ExecutionPolicy = instant_execution {})
-        : details::named_argument(longname, shortname), f(functor) {
+            ExecutionPolicy = instant_execution {},
+            prefix_policy prefix = prefix_policy::optional)
+        : details::named_argument(longname, shortname, prefix), f(functor) {
       cmdline.attach(*this);
     }
 

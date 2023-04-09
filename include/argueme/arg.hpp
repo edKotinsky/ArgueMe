@@ -8,6 +8,7 @@
 #include <string>
 #include <string_view>
 #include <type_traits>
+#include <utility>
 #include <vector>
 
 namespace arg {
@@ -133,6 +134,7 @@ namespace arg {
           throw command_line_error(
               "command_line_impl::parse called recursively");
         parsing_active = true;
+        stop_parsing = false;
 
         try {
           input = &input_vec;
@@ -152,6 +154,11 @@ namespace arg {
               } else throw argument_error("Unrecognized argument");
             } catch (argument_error const& e) {
               throw argument_error(e.what(), last_arg);
+            }
+            if (stop_parsing) {
+              parsing_active = false;
+              input = nullptr;
+              return;
             }
             ++current;
           }
@@ -304,6 +311,14 @@ namespace arg {
         return vec;
       }
 
+      void stop() noexcept { stop_parsing = true; }
+
+      std::pair<std::vector<std::string_view>::const_iterator,
+                std::vector<std::string_view>::const_iterator>
+          get_arg_iterator() const noexcept {
+        return { current, input->cend() };
+      }
+
     private:
       struct posarg_wrapper {
       public:
@@ -320,6 +335,7 @@ namespace arg {
       };
 
       bool parsing_active = false;
+      bool stop_parsing = false;
 
       using argument_t = std::reference_wrapper<named_argument>;
       using argsvec_t = std::vector<argument_t>;
@@ -417,6 +433,14 @@ namespace arg {
       args.reserve(vec.size());
       for (std::string_view s : vec) args.push_back(s);
       impl.parse(args);
+    }
+
+    void stop() noexcept { impl.stop(); }
+
+    std::pair<std::vector<std::string_view>::const_iterator,
+              std::vector<std::string_view>::const_iterator>
+        get_iterator() const noexcept {
+      return impl.get_arg_iterator();
     }
 
     std::string_view prefix_long() const noexcept { return longname_p; }
